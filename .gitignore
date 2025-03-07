@@ -10,3 +10,5 @@
 /.flatpak/
 /vendor
 /.vscode
+/subprojects/*
+!/subprojects/*.wrap
