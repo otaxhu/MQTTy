@@ -1,5 +1,28 @@
-subdir('icons')
-subdir('resources')
+# Blueprint compilation
+blueprint_files = []
+
+blueprint_targets = []
+foreach bl_file : blueprint_files
+  blueprint_targets += bl_file.replace('.blp', '.ui').split('/')[-1]
+endforeach
+
+blueprints = custom_target('blueprints',
+  input: files(blueprint_files),
+  output: blueprint_targets,
+  command: [find_program('blueprint-compiler'), 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],
+)
+
+# Resources
+resources = gnome.compile_resources(
+  'MQTTy',
+  '@0@.gresource.xml'.format(base_id),
+  dependencies: blueprints,
+  gresource_bundle: true,
+  source_dir: meson.current_build_dir(),
+  install: true,
+  install_dir: pkgdatadir,
+)
+
 # Desktop file
 desktop_conf = configuration_data()
 desktop_conf.set('icon', application_id)
