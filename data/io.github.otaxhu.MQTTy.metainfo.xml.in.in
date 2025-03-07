@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Oscar Pernia 2019 <oscarperniamoreno@gmail.com> -->
+<component type="desktop-application">
+  <id>@app-id@</id>
+  <metadata_license>CC0</metadata_license>
+  <!-- Insert your license of choice here -->
+  <!-- <project_license>MIT</project_license> -->
+  <name>MQTTy</name>
+  <summary>Write a GTK + Rust application</summary>
+  <description>
+    <p>A boilerplate template for GTK + Rust. It uses Meson as a build system and has flatpak support by default.</p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://gitlab.gnome.org/bilelmoussaoui/MQTTy/raw/master/data/resources/screenshots/screenshot1.png</image>
+      <caption>Main window</caption>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://gitlab.gnome.org/bilelmoussaoui/MQTTy</url>
+  <url type="bugtracker">https://gitlab.gnome.org/bilelmoussaoui/MQTTy/issues</url>
+  <!-- Source code repository -->
+  <url type="vcs-browser">https://gitlab.gnome.org/bilelmoussaoui/MQTTy</url>
+  <!-- Translation repository -->
+  <url type="translate">https://gitlab.gnome.org/bilelmoussaoui/MQTTy/-/tree/master/po</url>
+  <!-- Open Age Ratings Service:
+       https://hughsie.github.io/oars/generate.html
+  -->
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2019-07-11" />
+  </releases>
+  <!-- developer_name tag deprecated with Appstream 1.0 -->
+  <developer_name translate="no">Oscar Pernia</developer_name>
+  <!-- Introduced with Appstream 1.0, but not yet fully supported by corresponding projects -->
+  <developer id="gnome.org">
+    <name translate="no">Oscar Pernia</name>
+  </developer>
+  <!-- 
+    Branding colors:
+    https://docs.flathub.org/docs/for-app-authors/metainfo-guidelines/#brand-color
+  -->
+  <branding>
+    <color type="primary" scheme_preference="light">#ff00ff</color>
+    <color type="primary" scheme_preference="dark">#993d3d</color>
+  </branding>  
+  <update_contact>oscarperniamoreno@gmail.com</update_contact>
+  <translation type="gettext">@gettext-package@</translation>
+  <launchable type="desktop-id">@app-id@.desktop</launchable>
+</component>
