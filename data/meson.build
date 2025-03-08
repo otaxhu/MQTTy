@@ -1,7 +1,7 @@
 # Blueprint compilation
 blueprint_files = [
   'gtk/help-overlay.blp',
-  'ui/window.blp',
+  'ui/main_window.blp',
 ]
 
 blueprint_targets = []
