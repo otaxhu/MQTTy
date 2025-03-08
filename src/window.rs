@@ -9,7 +9,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, gtk::CompositeTemplate)]
-    #[template(resource = "/io/github/otaxhu/MQTTy/ui/window.ui")]
+    #[template(resource = "/io/github/otaxhu/MQTTy/ui/main_window.ui")]
     pub struct ExampleApplicationWindow {
         #[template_child]
         pub headerbar: TemplateChild<gtk::HeaderBar>,
