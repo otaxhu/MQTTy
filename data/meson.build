@@ -1,5 +1,8 @@
 # Blueprint compilation
-blueprint_files = []
+blueprint_files = [
+  'gtk/help-overlay.blp',
+  'ui/window.blp',
+]
 
 blueprint_targets = []
 foreach bl_file : blueprint_files
@@ -94,4 +97,15 @@ test(
   args: [
     '--strict', '--dry-run', meson.current_build_dir()
   ],
+)
+
+# Icons
+install_data(
+  '@0@.svg'.format('icons' / application_id),
+  install_dir: iconsdir / 'hicolor' / 'scalable' / 'apps'
+)
+install_data(
+  '@0@-symbolic.svg'.format('icons' / base_id),
+  install_dir: iconsdir / 'hicolor' / 'symbolic' / 'apps',
+  rename: '@0@-symbolic.svg'.format(application_id)
 )
