@@ -1,4 +1,5 @@
 using Gtk 4.0;
+using Adw 1;
 
 menu primary_menu {
   section {
@@ -19,23 +20,30 @@ menu primary_menu {
   }
 }
 
-template $ExampleApplicationWindow: ApplicationWindow {
-  [titlebar]
-  HeaderBar headerbar {
-    [end]
-    MenuButton appmenu_button {
-      icon-name: 'open-menu-symbolic';
-      menu-model: primary_menu;
-      primary: true;
-      tooltip-text: _('Main Menu');
+template $MQTTyWindow: Adw.ApplicationWindow {
+  hide-on-close: true;
+  Adw.NavigationSplitView {
+    [sidebar]
+    Adw.NavigationPage {}
+
+    [content]
+    Adw.NavigationPage {
+      Adw.ToolbarView {
+        [top]
+        Adw.HeaderBar {
+          [start]
+          MenuButton {
+            icon-name: 'open-menu-symbolic';
+            menu-model: primary_menu;
+            primary: true;
+            tooltip-text: _('Main Menu');
+          }
+
+          title-widget: Adw.WindowTitle {
+            title: "MQTTy";
+          };
+        }
+      }
     }
-  }
-
-  Label label {
-    label: _('Hello world!');
-
-    styles [
-      "title-header",
-    ]
   }
 }

@@ -1,33 +1,33 @@
+use std::cell::OnceCell;
+
+use adw::subclass::prelude::*;
 use gettextrs::gettext;
+use glib::WeakRef;
+use gtk::prelude::*;
+use gtk::{gio, glib};
 use tracing::{debug, info};
 
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{gdk, gio, glib};
-
 use crate::config::{APP_ID, PKGDATADIR, PROFILE, VERSION};
-use crate::window::ExampleApplicationWindow;
+use crate::main_window::MQTTyWindow;
 
 mod imp {
     use super::*;
-    use glib::WeakRef;
-    use std::cell::OnceCell;
 
     #[derive(Debug, Default)]
-    pub struct ExampleApplication {
-        pub window: OnceCell<WeakRef<ExampleApplicationWindow>>,
+    pub struct MQTTyApplication {
+        pub window: OnceCell<WeakRef<MQTTyWindow>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for ExampleApplication {
-        const NAME: &'static str = "ExampleApplication";
-        type Type = super::ExampleApplication;
-        type ParentType = gtk::Application;
+    impl ObjectSubclass for MQTTyApplication {
+        const NAME: &'static str = "MQTTyApplication";
+        type Type = super::MQTTyApplication;
+        type ParentType = adw::Application;
     }
 
-    impl ObjectImpl for ExampleApplication {}
+    impl ObjectImpl for MQTTyApplication {}
 
-    impl ApplicationImpl for ExampleApplication {
+    impl ApplicationImpl for MQTTyApplication {
         fn activate(&self) {
             debug!("GtkApplication<ExampleApplication>::activate");
             self.parent_activate();
@@ -39,7 +39,7 @@ mod imp {
                 return;
             }
 
-            let window = ExampleApplicationWindow::new(&app);
+            let window = MQTTyWindow::new(&app);
             self.window
                 .set(window.downgrade())
                 .expect("Window already set.");
@@ -61,17 +61,18 @@ mod imp {
         }
     }
 
-    impl GtkApplicationImpl for ExampleApplication {}
+    impl GtkApplicationImpl for MQTTyApplication {}
+    impl AdwApplicationImpl for MQTTyApplication {}
 }
 
 glib::wrapper! {
-    pub struct ExampleApplication(ObjectSubclass<imp::ExampleApplication>)
-        @extends gio::Application, gtk::Application,
+    pub struct MQTTyApplication(ObjectSubclass<imp::MQTTyApplication>)
+        @extends gio::Application, gtk::Application, adw::Application,
         @implements gio::ActionMap, gio::ActionGroup;
 }
 
-impl ExampleApplication {
-    fn main_window(&self) -> ExampleApplicationWindow {
+impl MQTTyApplication {
+    fn main_window(&self) -> MQTTyWindow {
         self.imp().window.get().unwrap().upgrade().unwrap()
     }
 
@@ -101,22 +102,24 @@ impl ExampleApplication {
     }
 
     fn setup_css(&self) {
-        let provider = gtk::CssProvider::new();
-        provider.load_from_resource("/io/github/otaxhu/MQTTy/style.css");
-        if let Some(display) = gdk::Display::default() {
-            gtk::style_context_add_provider_for_display(
-                &display,
-                &provider,
-                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-            );
-        }
+        // // Libadwaita automatically reads the style.css file for us.
+        //
+        // let provider = gtk::CssProvider::new();
+        // provider.load_from_resource("/io/github/otaxhu/MQTTy/style.css");
+        // if let Some(display) = gdk::Display::default() {
+        //     gtk::style_context_add_provider_for_display(
+        //         &display,
+        //         &provider,
+        //         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        //     );
+        // }
     }
 
     fn show_about_dialog(&self) {
         let dialog = gtk::AboutDialog::builder()
             .logo_icon_name(APP_ID)
             // Insert your license of choice here
-            // .license_type(gtk::License::MitX11)
+            .license_type(gtk::License::Gpl30)
             // Insert your website here
             // .website("https://gitlab.gnome.org/bilelmoussaoui/MQTTy/")
             .version(VERSION)
@@ -139,7 +142,7 @@ impl ExampleApplication {
     }
 }
 
-impl Default for ExampleApplication {
+impl Default for MQTTyApplication {
     fn default() -> Self {
         glib::Object::builder()
             .property("application-id", APP_ID)

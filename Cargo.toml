@@ -7,6 +7,7 @@ edition = "2021"
 lto = true
 
 [dependencies]
+adw = { version = "0.7.1", package = "libadwaita" }
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 gtk = { version = "0.9", package = "gtk4", features = ["v4_8"] }
 tracing = "0.1.37"
