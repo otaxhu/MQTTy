@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=MQTTy
-Comment=Write a GTK + Rust application
+Comment=Connect to an MQTT broker and Pub/Sub to topics
 Type=Application
 Exec=MQTTy
 Terminal=false
