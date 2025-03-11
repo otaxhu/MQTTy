@@ -4,6 +4,7 @@ mod config;
 mod main_window;
 
 use gettextrs::{gettext, LocaleCategory};
+use gtk::prelude::*;
 use gtk::{gio, glib};
 
 use self::application::MQTTyApplication;
@@ -27,6 +28,6 @@ fn main() -> glib::ExitCode {
     //
     // adw::init().unwrap();
 
-    let app = MQTTyApplication::default();
+    let app = MQTTyApplication::get_singleton();
     app.run()
 }

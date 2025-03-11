@@ -1,13 +1,11 @@
 use std::cell::OnceCell;
 
+use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use glib::WeakRef;
-use gtk::prelude::*;
 use gtk::{gio, glib};
-use tracing::{debug, info};
 
-use crate::config::{APP_ID, PKGDATADIR, PROFILE, VERSION};
+use crate::config;
 use crate::main_window::MQTTyWindow;
 
 mod imp {
@@ -15,7 +13,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct MQTTyApplication {
-        pub window: OnceCell<WeakRef<MQTTyWindow>>,
+        settings: OnceCell<gio::Settings>,
     }
 
     #[glib::object_subclass]
@@ -29,31 +27,25 @@ mod imp {
 
     impl ApplicationImpl for MQTTyApplication {
         fn activate(&self) {
-            debug!("GtkApplication<ExampleApplication>::activate");
             self.parent_activate();
             let app = self.obj();
 
-            if let Some(window) = self.window.get() {
-                let window = window.upgrade().unwrap();
+            if let Some(window) = app.active_window() {
                 window.present();
                 return;
             }
 
             let window = MQTTyWindow::new(&app);
-            self.window
-                .set(window.downgrade())
-                .expect("Window already set.");
 
-            app.main_window().present();
+            window.present();
         }
 
         fn startup(&self) {
-            debug!("GtkApplication<ExampleApplication>::startup");
             self.parent_startup();
             let app = self.obj();
 
             // Set icons for shell
-            gtk::Window::set_default_icon_name(APP_ID);
+            gtk::Window::set_default_icon_name(config::APP_ID);
 
             app.setup_css();
             app.setup_gactions();
@@ -72,8 +64,14 @@ glib::wrapper! {
 }
 
 impl MQTTyApplication {
-    fn main_window(&self) -> MQTTyWindow {
-        self.imp().window.get().unwrap().upgrade().unwrap()
+    pub fn get_singleton() -> Self {
+        match gio::Application::default().and_downcast::<MQTTyApplication>() {
+            None => glib::Object::builder()
+                .property("application-id", config::APP_ID)
+                .property("resource-base-path", "/io/github/otaxhu/MQTTy/")
+                .build(),
+            Some(app) => app,
+        }
     }
 
     fn setup_gactions(&self) {
@@ -81,24 +79,38 @@ impl MQTTyApplication {
         let action_quit = gio::ActionEntry::builder("quit")
             .activate(move |app: &Self, _, _| {
                 // This is needed to trigger the delete event and saving the window state
-                app.main_window().close();
+                if let Some(win) = app.active_window() {
+                    win.set_hide_on_close(false);
+                    win.close();
+                }
                 app.quit();
             })
             .build();
 
-        // About
         let action_about = gio::ActionEntry::builder("about")
             .activate(|app: &Self, _, _| {
-                app.show_about_dialog();
+                let about_dialog = adw::AboutDialog::builder()
+                    .application_name("MQTTy")
+                    .application_icon(config::APP_ID)
+                    .version(config::VERSION)
+                    .copyright(gettext("© 2025 The MQTTy Authors"))
+                    .developer_name(gettext("The MQTTy Authors"))
+                    .translator_credits(gettext("translator-credits"))
+                    .license_type(gtk::License::Gpl30)
+                    .issue_url("https://github.com/otaxhu/MQTTy/issues")
+                    .website("https://github.com/otaxhu/MQTTy")
+                    .build();
+
+                about_dialog.present(app.active_window().as_ref());
             })
             .build();
+
         self.add_action_entries([action_quit, action_about]);
     }
 
     // Sets up keyboard shortcuts
     fn setup_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
-        self.set_accels_for_action("window.close", &["<Control>w"]);
     }
 
     fn setup_css(&self) {
@@ -113,40 +125,5 @@ impl MQTTyApplication {
         //         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         //     );
         // }
-    }
-
-    fn show_about_dialog(&self) {
-        let dialog = gtk::AboutDialog::builder()
-            .logo_icon_name(APP_ID)
-            // Insert your license of choice here
-            .license_type(gtk::License::Gpl30)
-            // Insert your website here
-            // .website("https://gitlab.gnome.org/bilelmoussaoui/MQTTy/")
-            .version(VERSION)
-            .transient_for(&self.main_window())
-            .translator_credits(gettext("translator-credits"))
-            .modal(true)
-            .authors(vec!["Oscar Pernia"])
-            .artists(vec!["Oscar Pernia"])
-            .build();
-
-        dialog.present();
-    }
-
-    pub fn run(&self) -> glib::ExitCode {
-        info!("MQTTy ({})", APP_ID);
-        info!("Version: {} ({})", VERSION, PROFILE);
-        info!("Datadir: {}", PKGDATADIR);
-
-        ApplicationExtManual::run(self)
-    }
-}
-
-impl Default for MQTTyApplication {
-    fn default() -> Self {
-        glib::Object::builder()
-            .property("application-id", APP_ID)
-            .property("resource-base-path", "/io/github/otaxhu/MQTTy/")
-            .build()
     }
 }
