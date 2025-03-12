@@ -1,47 +1,74 @@
 using Gtk 4.0;
 using Adw 1;
 
-menu primary_menu {
-  section {
-    item {
-      label: _('_Preferences');
-      action: 'app.preferences';
-    }
-
-    item {
-      label: _('_Keyboard Shortcuts');
-      action: 'win.show-help-overlay';
-    }
-
-    item {
-      label: _('_About MQTTy');
-      action: 'app.about';
-    }
-  }
-}
-
 template $MQTTyWindow: Adw.ApplicationWindow {
   hide-on-close: true;
-  Adw.NavigationSplitView {
+  width-request: 450;
+  height-request: 600;
+
+  Adw.Breakpoint {
+    condition ("max-width: 450sp")
+
+    setters {
+      split_view.collapsed: true;
+    }
+  }
+
+  [content]
+  Adw.OverlaySplitView split_view {
     [sidebar]
-    Adw.NavigationPage {}
+    ScrolledWindow {
+      StackSidebar {
+        stack: stack;
+      }
+    }
 
     [content]
-    Adw.NavigationPage {
-      Adw.ToolbarView {
-        [top]
-        Adw.HeaderBar {
-          [start]
-          MenuButton {
-            icon-name: 'open-menu-symbolic';
-            menu-model: primary_menu;
-            primary: true;
-            tooltip-text: _('Main Menu');
+    Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {
+        [start]
+        Box {
+          spacing: 8;
+
+          ToggleButton {
+            active: bind split_view.show-sidebar bidirectional;
+            icon-name: "open-menu-symbolic";
           }
 
-          title-widget: Adw.WindowTitle {
-            title: "MQTTy";
-          };
+          Button {
+            styles [
+              "suggested-action"
+            ]
+
+            icon-name: "tab-new";
+          }
+        }
+
+        title-widget: Adw.WindowTitle {
+          title: "MQTTy";
+        };
+      }
+
+      ScrolledWindow {
+        Stack stack {
+          StackPage {
+            name: "primera";
+            title: "Pito";
+
+            child: Label {
+              label: "primera";
+            };
+          }
+
+          StackPage {
+            name: "segunda";
+            title: "Pito";
+
+            child: Label {
+              label: "segunda";
+            };
+          }
         }
       }
     }

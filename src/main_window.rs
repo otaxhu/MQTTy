@@ -3,24 +3,20 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
-use crate::config::{APP_ID, PROFILE};
+use crate::config;
 
 mod imp {
 
     use super::*;
 
-    #[derive(Debug, gtk::CompositeTemplate)]
+    #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/main_window.ui")]
     pub struct MQTTyWindow {
-        pub settings: gio::Settings,
-    }
+        #[template_child]
+        split_view: TemplateChild<adw::OverlaySplitView>,
 
-    impl Default for MQTTyWindow {
-        fn default() -> Self {
-            Self {
-                settings: gio::Settings::new(APP_ID),
-            }
-        }
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
     }
 
     #[glib::object_subclass]
@@ -45,12 +41,23 @@ mod imp {
             let obj = self.obj();
 
             // Devel Profile
-            if PROFILE == "Devel" {
+            if config::PROFILE == "Devel" {
                 obj.add_css_class("devel");
             }
 
             // Load latest window state
             obj.load_window_size();
+
+            let split_view = &self.split_view;
+
+            // Close sidebar when selecting page, only when using mobile
+            self.stack.connect_visible_child_notify(glib::clone!(
+                #[weak]
+                split_view,
+                move |_| {
+                    split_view.set_show_sidebar(!split_view.is_collapsed());
+                }
+            ));
         }
     }
 
@@ -58,9 +65,7 @@ mod imp {
     impl WindowImpl for MQTTyWindow {
         // Save window state on delete event
         fn close_request(&self) -> glib::Propagation {
-            if let Err(err) = self.obj().save_window_size() {
-                tracing::warn!("Failed to save window state, {}", &err);
-            }
+            self.obj().save_window_size();
 
             // Pass close request on to the parent
             self.parent_close_request()
@@ -82,26 +87,29 @@ impl MQTTyWindow {
         glib::Object::builder().property("application", app).build()
     }
 
-    fn save_window_size(&self) -> Result<(), glib::BoolError> {
-        let imp = self.imp();
+    fn save_window_size(&self) {
+        let app = MQTTyApplication::get_singleton();
 
         let (width, height) = self.default_size();
 
-        imp.settings.set_int("window-width", width)?;
-        imp.settings.set_int("window-height", height)?;
+        let settings = app.settings();
 
-        imp.settings
-            .set_boolean("is-maximized", self.is_maximized())?;
+        settings.set_int("window-width", width).unwrap();
+        settings.set_int("window-height", height).unwrap();
 
-        Ok(())
+        settings
+            .set_boolean("is-maximized", self.is_maximized())
+            .unwrap();
     }
 
     fn load_window_size(&self) {
-        let imp = self.imp();
+        let app = MQTTyApplication::get_singleton();
 
-        let width = imp.settings.int("window-width");
-        let height = imp.settings.int("window-height");
-        let is_maximized = imp.settings.boolean("is-maximized");
+        let settings = app.settings();
+
+        let width = settings.int("window-width");
+        let height = settings.int("window-height");
+        let is_maximized = settings.boolean("is-maximized");
 
         self.set_default_size(width, height);
 

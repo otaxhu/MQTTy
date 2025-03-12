@@ -13,7 +13,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct MQTTyApplication {
-        settings: OnceCell<gio::Settings>,
+        pub settings: OnceCell<gio::Settings>,
     }
 
     #[glib::object_subclass]
@@ -72,6 +72,12 @@ impl MQTTyApplication {
                 .build(),
             Some(app) => app,
         }
+    }
+
+    pub fn settings(&self) -> &gio::Settings {
+        self.imp()
+            .settings
+            .get_or_init(|| gio::Settings::new(config::APP_ID))
     }
 
     fn setup_gactions(&self) {
