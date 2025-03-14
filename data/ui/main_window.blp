@@ -1,5 +1,6 @@
 using Gtk 4.0;
 using Adw 1;
+using Gio 2.0;
 
 template $MQTTyWindow: Adw.ApplicationWindow {
   hide-on-close: true;
@@ -11,66 +12,125 @@ template $MQTTyWindow: Adw.ApplicationWindow {
 
     setters {
       split_view.collapsed: true;
+      flowbox.min-children-per-line: 1;
+      flowbox.max-children-per-line: 1;
     }
   }
 
   [content]
-  Adw.OverlaySplitView split_view {
-    [sidebar]
-    ScrolledWindow {
-      StackSidebar {
-        stack: stack;
+  Adw.ToolbarView {
+    top-bar-style: raised;
+
+    [top]
+    Adw.HeaderBar {
+      [start]
+      Box {
+        spacing: 8;
+
+        ToggleButton sidebar_button {
+          active: bind split_view.show-sidebar bidirectional;
+          icon-name: "open-menu-symbolic";
+          // Disable by default because the first StackPage is not the conn panel
+          visible: false;
+        }
+
+        // Button {
+        //   styles [
+        //     "suggested-action"
+        //   ]
+        //   icon-name: "tab-new";
+        // }
+      }
+
+      title-widget: Adw.WindowTitle {
+        title: "MQTTy";
+      };
+
+      [end]
+      MenuButton {
+        icon-name: "view-more-symbolic";
+        menu-model: main_menu;
       }
     }
 
-    [content]
-    Adw.ToolbarView {
-      [top]
-      Adw.HeaderBar {
-        [start]
-        Box {
-          spacing: 8;
+    // Shows all the MQTT connections or an specific connection when the user clicks on any of them.
+    Stack conn_stack {
+      StackPage {
+        name: "conn_stack_all_conns";
 
-          ToggleButton {
-            active: bind split_view.show-sidebar bidirectional;
-            icon-name: "open-menu-symbolic";
+        child: ScrolledWindow {
+          Adw.Clamp {
+            FlowBox flowbox {
+              styles [
+                "background"
+              ]
+
+              valign: center;
+              halign: center;
+              // Magic Hack?!?
+              // 
+              // If you set it to 1, you get a 1 column FlowBox, idk why,
+              // any other number makes the FlowBox to extend more than 1 column
+              min-children-per-line: 2;
+            }
           }
-
-          Button {
-            styles [
-              "suggested-action"
-            ]
-
-            icon-name: "tab-new";
-          }
-        }
-
-        title-widget: Adw.WindowTitle {
-          title: "MQTTy";
         };
       }
 
-      ScrolledWindow {
-        Stack stack {
-          StackPage {
-            name: "primera";
-            title: "Pito";
+      StackPage panel_page {
+        name: "conn_stack_conn_panel";
 
-            child: Label {
-              label: "primera";
-            };
+        child: Adw.OverlaySplitView split_view {
+          [sidebar]
+          ScrolledWindow {
+            StackSidebar {
+              stack: stack;
+            }
           }
 
-          StackPage {
-            name: "segunda";
-            title: "Pito";
+          [content]
+          ScrolledWindow {
+            Stack stack {
+              StackPage {
+                name: "test-1";
+                title: "Test 1";
 
-            child: Label {
-              label: "segunda";
-            };
+                child: Label {
+                  label: "Test 1";
+                };
+              }
+
+              StackPage {
+                name: "test-2";
+                title: "Test 2";
+
+                child: Label {
+                  label: "Test 2";
+                };
+              }
+            }
           }
-        }
+        };
       }
+    }
+  }
+}
+
+menu main_menu {
+  section {
+    item {
+      label: _('_Preferences');
+      action: 'app.preferences';
+    }
+
+    item {
+      label: _('_Keyboard Shortcuts');
+      action: 'win.show-help-overlay';
+    }
+
+    item {
+      label: _('_About MQTTy');
+      action: 'app.about';
     }
   }
 }

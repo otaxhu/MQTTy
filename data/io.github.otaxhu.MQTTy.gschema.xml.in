@@ -13,5 +13,19 @@
       <default>false</default>
       <summary>Window maximized state</summary>
     </key>
+
+    <!--
+      This is the human-readable type definition for this setting:
+
+        type open-connections = []struct
+          {
+            url: String;
+            topic: String;
+          }
+     -->
+    <key name="open-connections" type="a(ss)">
+      <default>[]</default>
+      <summary>List of open connections</summary>
+    </key>
   </schema>
 </schemalist>

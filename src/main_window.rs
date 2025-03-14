@@ -4,6 +4,7 @@ use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
 use crate::config;
+// use crate::gsettings::OpenConnection;
 
 mod imp {
 
@@ -17,6 +18,19 @@ mod imp {
 
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
+
+        #[template_child]
+        conn_stack: TemplateChild<gtk::Stack>,
+
+        #[template_child]
+        sidebar_button: TemplateChild<gtk::ToggleButton>,
+
+        // #[template_child]
+        // grid_view: TemplateChild<gtk::GridView>,
+        // #[template_child]
+        // conn_list_store: TemplateChild<gtk::StringList>,
+        #[template_child]
+        flowbox: TemplateChild<gtk::FlowBox>,
     }
 
     #[glib::object_subclass]
@@ -58,6 +72,38 @@ mod imp {
                     split_view.set_show_sidebar(!split_view.is_collapsed());
                 }
             ));
+
+            let sidebar_button = &self.sidebar_button;
+
+            // Only show sidebar_button when the visible StackPage is conn_stack_conn_panel
+            self.conn_stack.connect_visible_child_notify(glib::clone!(
+                #[weak]
+                sidebar_button,
+                move |conn_stack| {
+                    sidebar_button.set_visible(
+                        conn_stack.visible_child_name().unwrap() == "conn_stack_conn_panel",
+                    );
+                }
+            ));
+
+            // let app = MQTTyApplication::get_singleton();
+
+            // let settings = app.settings();
+
+            // let s = settings.get::<Vec<OpenConnection>>("open-connections");
+
+            // let store = gio::ListStore::new::<gtk::Widget>();
+
+            // TODO: Append the first element, the "create" widget, it will be a card, when clicked,
+            // it will prompt the user for connection configuration, when saved, that configuration will
+            // be displayed as another card appended to store.
+            //
+            // store.append(...);
+
+            // self.flowbox.bind_model(Some(&store), |item| {
+            //     let string = item.downcast_ref::<gtk::StringObject>().unwrap();
+            //     Label::builder().label(string).build().into()
+            // });
         }
     }
 

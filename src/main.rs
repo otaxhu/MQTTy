@@ -1,6 +1,7 @@
 mod application;
 #[rustfmt::skip]
 mod config;
+mod gsettings;
 mod main_window;
 
 use gettextrs::{gettext, LocaleCategory};
