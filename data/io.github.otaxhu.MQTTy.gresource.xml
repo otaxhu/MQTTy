@@ -4,6 +4,8 @@
     <!-- see https://gtk-rs.org/gtk4-rs/git/docs/gtk4/struct.Application.html#automatic-resources -->
     <file compressed="true" preprocess="xml-stripblanks" alias="gtk/help-overlay.ui">gtk/help-overlay.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/main_window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/add_conn_card.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/conn_card.ui</file>
     <file compressed="true">style.css</file>
   </gresource>
 </gresources>

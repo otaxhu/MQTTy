@@ -3,6 +3,7 @@ mod application;
 mod config;
 mod gsettings;
 mod main_window;
+mod widgets;
 
 use gettextrs::{gettext, LocaleCategory};
 use gtk::prelude::*;

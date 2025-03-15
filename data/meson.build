@@ -2,6 +2,8 @@
 blueprint_files = [
   'gtk/help-overlay.blp',
   'ui/main_window.blp',
+  'ui/add_conn_card.blp',
+  'ui/conn_card.blp'
 ]
 
 blueprint_targets = []

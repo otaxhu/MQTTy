@@ -60,7 +60,16 @@ template $MQTTyWindow: Adw.ApplicationWindow {
 
         child: ScrolledWindow {
           Adw.Clamp {
+            margin-top: 32;
+            margin-bottom: 32;
+            margin-start: 32;
+            margin-end: 32;
+
             FlowBox flowbox {
+              row-spacing: 16;
+              column-spacing: 16;
+              homogeneous: true;
+
               styles [
                 "background"
               ]

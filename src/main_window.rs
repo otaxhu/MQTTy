@@ -4,7 +4,9 @@ use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
 use crate::config;
-// use crate::gsettings::OpenConnection;
+use crate::gsettings::MQTTyOpenConnection;
+use crate::widgets::MQTTyAddConnCard;
+use crate::widgets::MQTTyConnCard;
 
 mod imp {
 
@@ -40,6 +42,8 @@ mod imp {
         type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
+            MQTTyConnCard::static_type();
+
             klass.bind_template();
         }
 
@@ -86,24 +90,34 @@ mod imp {
                 }
             ));
 
-            // let app = MQTTyApplication::get_singleton();
+            let app = MQTTyApplication::get_singleton();
 
-            // let settings = app.settings();
+            let settings = app.settings();
 
-            // let s = settings.get::<Vec<OpenConnection>>("open-connections");
+            let connections = settings.get::<Vec<MQTTyOpenConnection>>("open-connections");
 
-            // let store = gio::ListStore::new::<gtk::Widget>();
+            // Create add connection card
+            self.flowbox.append(
+                &gtk::FlowBoxChild::builder()
+                    .child(&MQTTyAddConnCard::new())
+                    .css_classes(["card", "activatable"])
+                    .build(),
+            );
 
-            // TODO: Append the first element, the "create" widget, it will be a card, when clicked,
-            // it will prompt the user for connection configuration, when saved, that configuration will
-            // be displayed as another card appended to store.
-            //
-            // store.append(...);
+            // Append all of the open connections widgets
+            for ref conn in connections {
+                let conn_card = MQTTyConnCard::from(conn);
+                self.flowbox.append(
+                    &gtk::FlowBoxChild::builder()
+                        .child(&conn_card)
+                        .css_classes(["card", "activatable"])
+                        .build(),
+                );
+            }
 
-            // self.flowbox.bind_model(Some(&store), |item| {
-            //     let string = item.downcast_ref::<gtk::StringObject>().unwrap();
-            //     Label::builder().label(string).build().into()
-            // });
+            // TODO: Handle activate signal for self.flowbox, handle connection creation and
+            // connection inspection, create another StackPage at the template for prompting
+            // the user.
         }
     }
 
