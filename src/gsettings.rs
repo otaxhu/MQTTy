@@ -23,7 +23,7 @@ impl StaticVariantType for MQTTyOpenConnection {
 
 impl FromVariant for MQTTyOpenConnection {
     fn from_variant(variant: &gtk::glib::Variant) -> Option<Self> {
-        let tuple = variant.get::<(String, String, String)>();
+        let tuple = variant.get::<(String, String)>();
         if tuple.is_none() {
             tracing::error!("Could not get 'open-connections' in the format 'a(ss)'");
         }
