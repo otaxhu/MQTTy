@@ -22,15 +22,8 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
 
         #[template_child]
-        conn_stack: TemplateChild<gtk::Stack>,
+        nav_view: TemplateChild<adw::NavigationView>,
 
-        #[template_child]
-        sidebar_button: TemplateChild<gtk::ToggleButton>,
-
-        // #[template_child]
-        // grid_view: TemplateChild<gtk::GridView>,
-        // #[template_child]
-        // conn_list_store: TemplateChild<gtk::StringList>,
         #[template_child]
         flowbox: TemplateChild<gtk::FlowBox>,
     }
@@ -77,19 +70,6 @@ mod imp {
                 }
             ));
 
-            let sidebar_button = &self.sidebar_button;
-
-            // Only show sidebar_button when the visible StackPage is conn_stack_conn_panel
-            self.conn_stack.connect_visible_child_notify(glib::clone!(
-                #[weak]
-                sidebar_button,
-                move |conn_stack| {
-                    sidebar_button.set_visible(
-                        conn_stack.visible_child_name().unwrap() == "conn_stack_conn_panel",
-                    );
-                }
-            ));
-
             let app = MQTTyApplication::get_singleton();
 
             let settings = app.settings();
@@ -114,14 +94,14 @@ mod imp {
                 );
             }
 
-            let conn_stack = &self.conn_stack;
+            let nav_view = &self.nav_view;
 
             self.flowbox.connect_child_activated(glib::clone!(
                 #[weak]
-                conn_stack,
+                nav_view,
                 move |_, child| {
                     if child == &add_conn_card {
-                        conn_stack.set_visible_child_name("conn_stack_new_conn");
+                        nav_view.push_by_tag("nav_view_new_conn");
                         return;
                     }
                 }

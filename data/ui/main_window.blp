@@ -4,9 +4,9 @@ using Gio 2.0;
 
 template $MQTTyWindow: Adw.ApplicationWindow {
   hide-on-close: true;
-  width-request: 450;
-  height-request: 600;
-
+  // // TODO: idk if this is really necessary, just commented it out
+  // width-request: 450;
+  // height-request: 600;
   Adw.Breakpoint {
     condition ("max-width: 450sp")
 
@@ -23,25 +23,6 @@ template $MQTTyWindow: Adw.ApplicationWindow {
 
     [top]
     Adw.HeaderBar {
-      [start]
-      Box {
-        spacing: 8;
-
-        ToggleButton sidebar_button {
-          active: bind split_view.show-sidebar bidirectional;
-          icon-name: "open-menu-symbolic";
-          // Disable by default because the first StackPage is not the conn panel
-          visible: false;
-        }
-
-        // Button {
-        //   styles [
-        //     "suggested-action"
-        //   ]
-        //   icon-name: "tab-new";
-        // }
-      }
-
       title-widget: Adw.WindowTitle {
         title: "MQTTy";
       };
@@ -53,110 +34,146 @@ template $MQTTyWindow: Adw.ApplicationWindow {
       }
     }
 
-    // Shows all the MQTT connections or an specific connection when the user clicks on any of them.
-    Stack conn_stack {
-      StackPage {
-        name: "conn_stack_all_conns";
+    // TODO: Use toasts to inform the user about actions made by him (like saving)
+    Adw.ToastOverlay toast_overlay {
+      // Shows all the MQTT connections or an specific connection when the user clicks on any of them.
+      Adw.NavigationView nav_view {
+        Adw.NavigationPage {
+          title: _("All connections");
+          tag: "nav_view_all_conns";
 
-        child: Adw.ClampScrollable {
-          FlowBox flowbox {
-            row-spacing: 16;
-            column-spacing: 16;
-            homogeneous: true;
-            margin-top: 32;
-            margin-bottom: 32;
-            margin-start: 32;
-            margin-end: 32;
-            // // We do not use a generated signal handler because we need the reference to the
-            // // new conn widget, so we can differ from other widgets
-            // 
-            // child-activated => $on_flowbox_child_activated();
-            styles [
-              "background"
-            ]
+          child: ScrolledWindow {
+            Adw.Clamp {
+              FlowBox flowbox {
+                row-spacing: 16;
+                column-spacing: 16;
+                homogeneous: true;
+                margin-top: 32;
+                margin-bottom: 32;
+                margin-start: 32;
+                margin-end: 32;
+                // // We do not use a generated signal handler because we need the reference to the
+                // // new conn widget, so we can differ from other widgets
+                // 
+                // child-activated => $on_flowbox_child_activated();
+                styles [
+                  "background"
+                ]
 
-            valign: center;
-            halign: center;
-            // Magic Hack?!?
-            // 
-            // If you set it to 1, you get a 1 column FlowBox, idk why,
-            // any other number makes the FlowBox to extend more than 1 column
-            min-children-per-line: 2;
-          }
-        };
-      }
+                valign: center;
+                halign: center;
+                // Magic Hack?!?
+                // 
+                // If you set it to 1, you get a 1 column FlowBox, idk why,
+                // any other number makes the FlowBox to extend more than 1 column
+                min-children-per-line: 2;
+              }
+            }
+          };
+        }
 
-      StackPage {
-        name: "conn_stack_new_conn";
+        Adw.NavigationPage {
+          title: _("New connection");
+          tag: "nav_view_new_conn";
 
-        child: Adw.ClampScrollable {
-          ListBox {
-            margin-top: 32;
-            margin-bottom: 32;
-            margin-start: 32;
-            margin-end: 32;
-            selection-mode: none;
-            valign: start;
-
-            styles [
-              "boxed-list"
-            ]
-
-            Adw.EntryRow {
-              title: C_("new connection form", "Host");
+          child: Adw.ToolbarView {
+            [top]
+            Adw.HeaderBar {
+              decoration-layout: "";
             }
 
-            Adw.EntryRow {
-              title: C_("new connection form", "Topic");
+            ScrolledWindow {
+              Adw.Clamp {
+                ListBox {
+                  margin-top: 32;
+                  margin-bottom: 32;
+                  margin-start: 32;
+                  margin-end: 32;
+                  selection-mode: none;
+                  valign: start;
+
+                  styles [
+                    "boxed-list"
+                  ]
+
+                  Adw.EntryRow {
+                    title: C_("new connection form", "Host");
+                  }
+
+                  Adw.EntryRow {
+                    title: C_("new connection form", "Topic");
+                  }
+
+                  Adw.ButtonRow {
+                    title: C_("new connection form", "Save");
+                    // action-name: ...; // TODO
+                    styles [
+                      "suggested-action",
+                    ]
+                  }
+                }
+              }
             }
+          };
+        }
 
-            Adw.ButtonRow {
-              title: C_("new connection form", "Save");
+        Adw.NavigationPage {
+          title: _("Connection configuration panel");
+          tag: "nav_view_conn_panel";
 
-              // action-name: ...; // TODO
-
+          child: Adw.ToolbarView {
+            [top]
+            Box {
               styles [
-                "suggested-action",
+                "toolbar",
               ]
-            }
-          }
-        };
-      }
 
-      StackPage panel_page {
-        name: "conn_stack_conn_panel";
-
-        child: Adw.OverlaySplitView split_view {
-          [sidebar]
-          ScrolledWindow {
-            StackSidebar {
-              stack: stack;
-            }
-          }
-
-          [content]
-          ScrolledWindow {
-            Stack stack {
-              StackPage {
-                name: "test-1";
-                title: "Test 1";
-
-                child: Label {
-                  label: "Test 1";
-                };
+              Button {
+                Adw.ButtonContent {
+                  icon-name: "go-previous-symbolic";
+                  label: C_("navigation previous button", "Back");
+                }
               }
 
-              StackPage {
-                name: "test-2";
-                title: "Test 2";
-
-                child: Label {
-                  label: "Test 2";
-                };
+              ToggleButton {
+                active: bind split_view.show-sidebar bidirectional;
+                icon-name: "sidebar-show-symbolic";
               }
             }
-          }
-        };
+
+            Adw.OverlaySplitView split_view {
+              [sidebar]
+              ScrolledWindow {
+                StackSidebar {
+                  stack: stack;
+                }
+              }
+
+              [content]
+              ScrolledWindow {
+                Stack stack {
+                  StackPage {
+                    name: "test-1";
+                    title: "Test 1";
+
+                    child: Label {
+                      label: "Test 1";
+                    };
+                  }
+
+                  StackPage {
+                    name: "test-2";
+                    title: "Test 2";
+
+                    child: Label {
+                      label: "Test 2";
+                    };
+                  }
+                }
+              }
+            }
+          };
+        }
       }
     }
   }
