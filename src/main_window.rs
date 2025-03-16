@@ -97,12 +97,11 @@ mod imp {
             let connections = settings.get::<Vec<MQTTyOpenConnection>>("open-connections");
 
             // Create add connection card
-            self.flowbox.append(
-                &gtk::FlowBoxChild::builder()
-                    .child(&MQTTyAddConnCard::new())
-                    .css_classes(["card", "activatable"])
-                    .build(),
-            );
+            let add_conn_card = gtk::FlowBoxChild::builder()
+                .child(&MQTTyAddConnCard::new())
+                .css_classes(["card", "activatable"])
+                .build();
+            self.flowbox.append(&add_conn_card);
 
             // Append all of the open connections widgets
             for ref conn in connections {
@@ -114,6 +113,19 @@ mod imp {
                         .build(),
                 );
             }
+
+            let conn_stack = &self.conn_stack;
+
+            self.flowbox.connect_child_activated(glib::clone!(
+                #[weak]
+                conn_stack,
+                move |_, child| {
+                    if child == &add_conn_card {
+                        conn_stack.set_visible_child_name("conn_stack_new_conn");
+                        return;
+                    }
+                }
+            ));
 
             // TODO: Handle activate signal for self.flowbox, handle connection creation and
             // connection inspection, create another StackPage at the template for prompting

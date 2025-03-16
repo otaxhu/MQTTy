@@ -58,29 +58,66 @@ template $MQTTyWindow: Adw.ApplicationWindow {
       StackPage {
         name: "conn_stack_all_conns";
 
-        child: ScrolledWindow {
-          Adw.Clamp {
+        child: Adw.ClampScrollable {
+          FlowBox flowbox {
+            row-spacing: 16;
+            column-spacing: 16;
+            homogeneous: true;
             margin-top: 32;
             margin-bottom: 32;
             margin-start: 32;
             margin-end: 32;
+            // // We do not use a generated signal handler because we need the reference to the
+            // // new conn widget, so we can differ from other widgets
+            // 
+            // child-activated => $on_flowbox_child_activated();
+            styles [
+              "background"
+            ]
 
-            FlowBox flowbox {
-              row-spacing: 16;
-              column-spacing: 16;
-              homogeneous: true;
+            valign: center;
+            halign: center;
+            // Magic Hack?!?
+            // 
+            // If you set it to 1, you get a 1 column FlowBox, idk why,
+            // any other number makes the FlowBox to extend more than 1 column
+            min-children-per-line: 2;
+          }
+        };
+      }
+
+      StackPage {
+        name: "conn_stack_new_conn";
+
+        child: Adw.ClampScrollable {
+          ListBox {
+            margin-top: 32;
+            margin-bottom: 32;
+            margin-start: 32;
+            margin-end: 32;
+            selection-mode: none;
+            valign: start;
+
+            styles [
+              "boxed-list"
+            ]
+
+            Adw.EntryRow {
+              title: C_("new connection form", "Host");
+            }
+
+            Adw.EntryRow {
+              title: C_("new connection form", "Topic");
+            }
+
+            Adw.ButtonRow {
+              title: C_("new connection form", "Save");
+
+              // action-name: ...; // TODO
 
               styles [
-                "background"
+                "suggested-action",
               ]
-
-              valign: center;
-              halign: center;
-              // Magic Hack?!?
-              // 
-              // If you set it to 1, you get a 1 column FlowBox, idk why,
-              // any other number makes the FlowBox to extend more than 1 column
-              min-children-per-line: 2;
             }
           }
         };
