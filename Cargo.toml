@@ -10,6 +10,6 @@ lto = true
 adw = { version = "0.7.1", package = "libadwaita", features = ["v1_5"]}
 derive_builder = "0.20.2"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
-gtk = { version = "0.9", package = "gtk4", features = ["v4_8"] }
+gtk = { version = "0.9", package = "gtk4", features = ["gnome_42"] }
 tracing = "0.1.37"
 tracing-subscriber = "0.3"
