@@ -5,13 +5,13 @@ template $MQTTyBasePage: Adw.NavigationPage {
   child: Adw.OverlaySplitView {
     show-sidebar: bind sidebar_button.active bidirectional;
     sidebar: bind template.sidebar;
+
     content: Adw.ToolbarView {
       [top]
       Adw.HeaderBar {
         [start]
         ToggleButton sidebar_button {
           active: false;
-
           icon-name: "open-menu-symbolic";
         }
 

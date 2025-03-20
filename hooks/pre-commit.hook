@@ -45,13 +45,33 @@ if ! which cargo >/dev/null 2>&1 || ! cargo fmt --help >/dev/null 2>&1; then
 
 fi
 
-echo "--Checking style--"
+echo "--Checking Rust style--"
 cargo fmt --all -- --check
 if test $? != 0; then
-    echo "--Checking style fail--"
+    echo "--Checking Rust style fail--"
     echo "Please fix the above issues, either manually or by running: cargo fmt --all"
 
     exit 1
 else
     echo "--Checking style pass--"
+fi
+
+echo "--Checking Blueprint style--"
+
+BLUEPRINT_CMD="blueprint-compiler"
+
+which $BLUEPRINT_CMD >/dev/null 2>&1
+
+if test $? != 0; then
+    BLUEPRINT_CMD=./subprojects/blueprint-compiler/blueprint-compiler.py
+    echo "blueprint-compiler not found, falling back to $BLUEPRINT_CMD"
+fi
+
+$BLUEPRINT_CMD format -s 2 data/gtk/*.blp data/ui/*.blp data/ui/pages/*.blp
+
+if test $? != 0; then
+    echo "--Checking Blueprint style fail--"
+    echo "Please fix the above issues, you will have to do it manually"
+
+    exit 1
 fi
