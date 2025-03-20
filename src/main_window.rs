@@ -5,6 +5,7 @@ use gtk::{gio, glib};
 use crate::application::MQTTyApplication;
 use crate::config;
 use crate::gsettings::MQTTyOpenConnection;
+use crate::pages::MQTTyBasePage;
 use crate::widgets::MQTTyAddConnCard;
 use crate::widgets::MQTTyConnCard;
 
@@ -15,17 +16,15 @@ mod imp {
     #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/main_window.ui")]
     pub struct MQTTyWindow {
-        #[template_child]
-        split_view: TemplateChild<adw::OverlaySplitView>,
+        // #[template_child]
+        // split_view: TemplateChild<adw::OverlaySplitView>,
 
-        #[template_child]
-        stack: TemplateChild<gtk::Stack>,
-
+        // #[template_child]
+        // stack: TemplateChild<gtk::Stack>,
         #[template_child]
         nav_view: TemplateChild<adw::NavigationView>,
-
-        #[template_child]
-        flowbox: TemplateChild<gtk::FlowBox>,
+        // #[template_child]
+        // flowbox: TemplateChild<gtk::FlowBox>,
     }
 
     #[glib::object_subclass]
@@ -36,6 +35,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             MQTTyConnCard::static_type();
+            MQTTyBasePage::static_type();
 
             klass.bind_template();
         }
@@ -59,16 +59,16 @@ mod imp {
             // Load latest window state
             obj.load_window_size();
 
-            let split_view = &self.split_view;
+            // let split_view = &self.split_view;
 
-            // Close sidebar when selecting page, only when using mobile
-            self.stack.connect_visible_child_notify(glib::clone!(
-                #[weak]
-                split_view,
-                move |_| {
-                    split_view.set_show_sidebar(!split_view.is_collapsed());
-                }
-            ));
+            // // Close sidebar when selecting page, only when using mobile
+            // self.stack.connect_visible_child_notify(glib::clone!(
+            //     #[weak]
+            //     split_view,
+            //     move |_| {
+            //         split_view.set_show_sidebar(!split_view.is_collapsed());
+            //     }
+            // ));
 
             let app = MQTTyApplication::get_singleton();
 
@@ -81,12 +81,27 @@ mod imp {
                 .child(&MQTTyAddConnCard::new())
                 .css_classes(["card", "activatable"])
                 .build();
-            self.flowbox.append(&add_conn_card);
+
+            let flowbox = &gtk::FlowBox::builder()
+                .homogeneous(true)
+                .column_spacing(16)
+                .row_spacing(16)
+                .valign(gtk::Align::Center)
+                .halign(gtk::Align::Center)
+                .build();
+            flowbox.append(&add_conn_card);
+
+            self.nav_view.push(&MQTTyBasePage::new(
+                flowbox,
+                // Some(&gtk::Label::builder().label("Some").build()),
+                gtk::Widget::NONE,
+                &*self.nav_view,
+            ));
 
             // Append all of the open connections widgets
             for ref conn in connections {
                 let conn_card = MQTTyConnCard::from(conn);
-                self.flowbox.append(
+                flowbox.append(
                     &gtk::FlowBoxChild::builder()
                         .child(&conn_card)
                         .css_classes(["card", "activatable"])
@@ -96,12 +111,17 @@ mod imp {
 
             let nav_view = &self.nav_view;
 
-            self.flowbox.connect_child_activated(glib::clone!(
+            flowbox.connect_child_activated(glib::clone!(
                 #[weak]
                 nav_view,
                 move |_, child| {
                     if child == &add_conn_card {
-                        nav_view.push_by_tag("nav_view_new_conn");
+                        nav_view.push(&MQTTyBasePage::new(
+                            &gtk::Label::builder().label("Some").build(),
+                            // Some(&gtk::Label::builder().label("Some").build()),
+                            gtk::Widget::NONE,
+                            &nav_view,
+                        ));
                         return;
                     }
                 }

@@ -7,15 +7,14 @@ template $MQTTyWindow: Adw.ApplicationWindow {
   // // TODO: idk if this is really necessary, just commented it out
   // width-request: 450;
   // height-request: 600;
-  Adw.Breakpoint {
-    condition ("max-width: 450sp")
-
-    setters {
-      split_view.collapsed: true;
-      flowbox.min-children-per-line: 1;
-      flowbox.max-children-per-line: 1;
-    }
-  }
+  // Adw.Breakpoint {
+  //   condition ("max-width: 450sp")
+  //   setters {
+  //     split_view.collapsed: true;
+  //     flowbox.min-children-per-line: 1;
+  //     flowbox.max-children-per-line: 1;
+  //   }
+  // }
 
   [content]
   Adw.ToolbarView {
@@ -25,6 +24,7 @@ template $MQTTyWindow: Adw.ApplicationWindow {
     Adw.HeaderBar {
       title-widget: Adw.WindowTitle {
         title: "MQTTy";
+        subtitle: bind nav_view.visible-page as <Adw.NavigationPage>.title;
       };
 
       [end]
@@ -36,145 +36,7 @@ template $MQTTyWindow: Adw.ApplicationWindow {
 
     // TODO: Use toasts to inform the user about actions made by him (like saving)
     Adw.ToastOverlay toast_overlay {
-      // Shows all the MQTT connections or an specific connection when the user clicks on any of them.
-      Adw.NavigationView nav_view {
-        Adw.NavigationPage {
-          title: _("All connections");
-          tag: "nav_view_all_conns";
-
-          child: ScrolledWindow {
-            Adw.Clamp {
-              FlowBox flowbox {
-                row-spacing: 16;
-                column-spacing: 16;
-                homogeneous: true;
-                margin-top: 32;
-                margin-bottom: 32;
-                margin-start: 32;
-                margin-end: 32;
-                // // We do not use a generated signal handler because we need the reference to the
-                // // new conn widget, so we can differ from other widgets
-                // 
-                // child-activated => $on_flowbox_child_activated();
-                styles [
-                  "background"
-                ]
-
-                valign: center;
-                halign: center;
-                // Magic Hack?!?
-                // 
-                // If you set it to 1, you get a 1 column FlowBox, idk why,
-                // any other number makes the FlowBox to extend more than 1 column
-                min-children-per-line: 2;
-              }
-            }
-          };
-        }
-
-        Adw.NavigationPage {
-          title: _("New connection");
-          tag: "nav_view_new_conn";
-
-          child: Adw.ToolbarView {
-            [top]
-            Adw.HeaderBar {
-              decoration-layout: "";
-            }
-
-            ScrolledWindow {
-              Adw.Clamp {
-                ListBox {
-                  margin-top: 32;
-                  margin-bottom: 32;
-                  margin-start: 32;
-                  margin-end: 32;
-                  selection-mode: none;
-                  valign: start;
-
-                  styles [
-                    "boxed-list"
-                  ]
-
-                  Adw.EntryRow {
-                    title: C_("new connection form", "Host");
-                  }
-
-                  Adw.EntryRow {
-                    title: C_("new connection form", "Topic");
-                  }
-
-                  Adw.ButtonRow {
-                    title: C_("new connection form", "Save");
-                    // action-name: ...; // TODO
-                    styles [
-                      "suggested-action",
-                    ]
-                  }
-                }
-              }
-            }
-          };
-        }
-
-        Adw.NavigationPage {
-          title: _("Connection configuration panel");
-          tag: "nav_view_conn_panel";
-
-          child: Adw.ToolbarView {
-            [top]
-            Box {
-              styles [
-                "toolbar",
-              ]
-
-              Button {
-                Adw.ButtonContent {
-                  icon-name: "go-previous-symbolic";
-                  label: C_("navigation previous button", "Back");
-                }
-              }
-
-              ToggleButton {
-                active: bind split_view.show-sidebar bidirectional;
-                icon-name: "sidebar-show-symbolic";
-              }
-            }
-
-            Adw.OverlaySplitView split_view {
-              [sidebar]
-              ScrolledWindow {
-                StackSidebar {
-                  stack: stack;
-                }
-              }
-
-              [content]
-              ScrolledWindow {
-                Stack stack {
-                  StackPage {
-                    name: "test-1";
-                    title: "Test 1";
-
-                    child: Label {
-                      label: "Test 1";
-                    };
-                  }
-
-                  StackPage {
-                    name: "test-2";
-                    title: "Test 2";
-
-                    child: Label {
-                      label: "Test 2";
-                    };
-                  }
-                }
-              }
-            }
-          };
-        }
-      }
+      Adw.NavigationView nav_view {}
     }
   }
 }

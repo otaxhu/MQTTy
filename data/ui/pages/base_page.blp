@@ -1,0 +1,30 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTyBasePage: Adw.NavigationPage {
+  child: Adw.OverlaySplitView {
+    show-sidebar: bind sidebar_button.active bidirectional;
+    sidebar: bind template.sidebar;
+    content: Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {
+        [start]
+        ToggleButton sidebar_button {
+          active: false;
+
+          icon-name: "open-menu-symbolic";
+        }
+
+        visible: bind template.is_header_bar_visible;
+        decoration-layout: "";
+        show-title: false;
+      }
+
+      Adw.Clamp {
+        Adw.Bin {
+          child: bind template.content;
+        }
+      }
+    };
+  };
+}

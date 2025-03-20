@@ -7,5 +7,10 @@
     <file compressed="true" preprocess="xml-stripblanks">ui/add_conn_card.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/conn_card.ui</file>
     <file compressed="true">style.css</file>
+
+    <!-- Pages -->
+    <file compressed="true" preprocess="xml-stripblanks">ui/pages/base_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/pages/edit_conn_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/pages/all_conn_page.ui</file>
   </gresource>
 </gresources>

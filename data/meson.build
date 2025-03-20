@@ -3,7 +3,10 @@ blueprint_files = [
   'gtk/help-overlay.blp',
   'ui/main_window.blp',
   'ui/add_conn_card.blp',
-  'ui/conn_card.blp'
+  'ui/conn_card.blp',
+  'ui/pages/base_page.blp',
+  'ui/pages/all_conn_page.blp',
+  'ui/pages/edit_conn_page.blp',
 ]
 
 blueprint_targets = []

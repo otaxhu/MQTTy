@@ -38,6 +38,7 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MQTTyConnCard {}
     impl WidgetImpl for MQTTyConnCard {}
     impl BinImpl for MQTTyConnCard {}
