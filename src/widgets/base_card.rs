@@ -55,17 +55,14 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            // TODO: Needs investigation, expression gets executed twice, find way to track
-            // each label separately without duplicating code
-            let show_label = gtk::ClosureExpression::new::<bool>(
-                [
-                    self.subtitle_label.property_expression_weak("label"),
-                    self.title_label.property_expression_weak("label"),
-                ],
-                glib::closure!(|label: gtk::Label, _: Option<String>, _: Option<String>| {
-                    label.label() != ""
-                }),
-            );
+            let show_label = gtk::PropertyExpression::new(
+                gtk::Label::static_type(),
+                gtk::Expression::NONE, // Queries the property on binded "this" object
+                "label",
+            )
+            .chain_closure::<bool>(glib::closure!(|_: gtk::Label, label: String| {
+                label != ""
+            }));
 
             show_label.bind(
                 &*self.subtitle_label,
