@@ -1,0 +1,50 @@
+using Gtk 4.0;
+using Adw 1;
+using Pango 1.0;
+
+template $MQTTyBaseCard: FlowBoxChild {
+  styles [
+    "activatable",
+    "card",
+  ]
+
+  Box {
+    margin-top: 16;
+    margin-bottom: 16;
+    margin-start: 16;
+    margin-end: 16;
+    spacing: 12;
+
+    Adw.Bin {
+      valign: center;
+      child: bind template.prefix_widget;
+    }
+
+    Box {
+      valign: center;
+      orientation: vertical;
+
+      Label title_label {
+        label: bind template.title;
+
+        styles [
+          "heading",
+        ]
+      }
+
+      Label subtitle_label {
+        label: bind template.subtitle;
+
+        styles [
+          "subtitle",
+          "dim-label",
+        ]
+      }
+    }
+
+    Adw.Bin {
+      valign: center;
+      child: bind template.suffix_widget;
+    }
+  }
+}

@@ -1,12 +1,17 @@
+use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
 
+use crate::subclass::prelude::*;
+use crate::widgets::MQTTyBaseCard;
+
 mod imp {
+
     use super::*;
 
     #[derive(Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/add_conn_card.ui")]
-    pub struct MQTTyAddConnCard;
+    pub struct MQTTyAddConnCard {}
 
     #[glib::object_subclass]
     impl ObjectSubclass for MQTTyAddConnCard {
@@ -14,9 +19,11 @@ mod imp {
 
         type Type = super::MQTTyAddConnCard;
 
-        type ParentType = adw::Bin;
+        type ParentType = MQTTyBaseCard;
 
         fn class_init(klass: &mut Self::Class) {
+            MQTTyBaseCard::static_type();
+
             klass.bind_template();
         }
 
@@ -27,12 +34,13 @@ mod imp {
 
     impl ObjectImpl for MQTTyAddConnCard {}
     impl WidgetImpl for MQTTyAddConnCard {}
-    impl BinImpl for MQTTyAddConnCard {}
+    impl FlowBoxChildImpl for MQTTyAddConnCard {}
+    impl MQTTyBaseCardImpl for MQTTyAddConnCard {}
 }
 
 glib::wrapper! {
     pub struct MQTTyAddConnCard(ObjectSubclass<imp::MQTTyAddConnCard>)
-        @extends gtk::Widget, adw::Bin,
+        @extends gtk::Widget, gtk::FlowBoxChild, MQTTyBaseCard,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 

@@ -1,4 +1,23 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $MQTTyAllConnPage: $MQTTyBasePage {}
+template $MQTTyAllConnPage: $MQTTyBasePage {
+  title: _("All connections");
+
+  content: ScrolledWindow {
+    FlowBox flowbox {
+      margin-top: 64;
+      margin-bottom: 64;
+      margin-start: 64;
+      margin-end: 64;
+      halign: center;
+      valign: center;
+      column-spacing: 16;
+      row-spacing: 16;
+      homogeneous: true;
+      max-children-per-line: 5;
+
+      $MQTTyAddConnCard add_conn_card {}
+    }
+  };
+}

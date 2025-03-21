@@ -1,8 +1,12 @@
 use adw::subclass::prelude::*;
 use gtk::glib;
+use gtk::prelude::*;
 
-use crate::pages::prelude::*;
 use crate::pages::MQTTyBasePage;
+use crate::subclass::prelude::*;
+use crate::widgets::MQTTyAddConnCard;
+use crate::widgets::MQTTyBaseCard;
+use crate::widgets::MQTTyConnCard;
 
 mod imp {
 
@@ -10,7 +14,13 @@ mod imp {
 
     #[derive(Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/pages/all_conn_page.ui")]
-    pub struct MQTTyAllConnPage {}
+    pub struct MQTTyAllConnPage {
+        #[template_child]
+        flowbox: TemplateChild<gtk::FlowBox>,
+
+        #[template_child]
+        add_conn_card: TemplateChild<MQTTyAddConnCard>,
+    }
 
     #[glib::object_subclass]
     impl ObjectSubclass for MQTTyAllConnPage {
@@ -21,6 +31,9 @@ mod imp {
         type ParentType = MQTTyBasePage;
 
         fn class_init(klass: &mut Self::Class) {
+            MQTTyAddConnCard::static_type();
+            MQTTyConnCard::static_type();
+
             klass.bind_template();
         }
 
@@ -28,14 +41,40 @@ mod imp {
             obj.init_template();
         }
     }
-    impl ObjectImpl for MQTTyAllConnPage {}
+    impl ObjectImpl for MQTTyAllConnPage {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let add_conn_card = &self.add_conn_card;
+
+            self.flowbox.connect_child_activated(glib::clone!(
+                #[weak]
+                add_conn_card,
+                move |_, child| {
+                    if child == add_conn_card.upcast_ref::<gtk::FlowBoxChild>() {
+                        println!("ADD CONN");
+                    }
+                }
+            ));
+        }
+    }
     impl WidgetImpl for MQTTyAllConnPage {}
     impl NavigationPageImpl for MQTTyAllConnPage {}
     impl MQTTyBasePageImpl for MQTTyAllConnPage {}
+
+    impl MQTTyAllConnPage {
+        fn append_card(&self, card: &impl IsA<MQTTyBaseCard>) {
+            self.flowbox.append(card.upcast_ref());
+        }
+
+        fn insert_card(&self, card: &impl IsA<MQTTyBaseCard>, position: i32) {
+            self.flowbox.insert(card.upcast_ref(), position);
+        }
+    }
 }
 
 glib::wrapper! {
     pub struct MQTTyAllConnPage(ObjectSubclass<imp::MQTTyAllConnPage>)
-        @extends gtk::Widget, adw::NavigationPage, MQTTyBasePage,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+    @extends gtk::Widget, adw::NavigationPage, MQTTyBasePage,
+    @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }

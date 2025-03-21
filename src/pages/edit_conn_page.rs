@@ -4,8 +4,8 @@ use adw::subclass::prelude::*;
 use gtk::glib;
 use gtk::prelude::*;
 
-use crate::pages::prelude::*;
 use crate::pages::MQTTyBasePage;
+use crate::subclass::prelude::*;
 
 mod imp {
 

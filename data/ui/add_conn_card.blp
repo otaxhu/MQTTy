@@ -1,22 +1,11 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $MQTTyAddConnCard: Adw.Bin {
-  Box {
-    margin-top: 16;
-    margin-bottom: 16;
-    margin-start: 16;
-    margin-end: 16;
-    spacing: 16;
-    valign: center;
+template $MQTTyAddConnCard: $MQTTyBaseCard {
+  title: _("Add connection");
 
-    Image {
-      icon-name: "list-add";
-      icon-size: large;
-    }
-
-    Label {
-      label: _("New connection");
-    }
-  }
+  prefix_widget: Image {
+    icon-name: "list-add-symbolic";
+    icon-size: large;
+  };
 }

@@ -1,4 +1,4 @@
-.title-header{
+.title-header {
   font-size: 36px;
   font-weight: bold;
 }
@@ -7,6 +7,8 @@
   padding: 16px;
 }
 
-.subtitle {
-  font-size: 8px;
+.card .subtitle {
+  font-size: 12px;
 }
+
+.card label {}

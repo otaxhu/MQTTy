@@ -5,8 +5,10 @@ use gtk::{gio, glib};
 use crate::application::MQTTyApplication;
 use crate::config;
 use crate::gsettings::MQTTyOpenConnection;
+use crate::pages::MQTTyAllConnPage;
 use crate::pages::MQTTyBasePage;
 use crate::widgets::MQTTyAddConnCard;
+use crate::widgets::MQTTyBaseCard;
 use crate::widgets::MQTTyConnCard;
 
 mod imp {
@@ -34,8 +36,10 @@ mod imp {
         type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
-            MQTTyConnCard::static_type();
             MQTTyBasePage::static_type();
+            MQTTyAllConnPage::static_type();
+            MQTTyBaseCard::static_type();
+            MQTTyAddConnCard::static_type();
 
             klass.bind_template();
         }
@@ -70,62 +74,62 @@ mod imp {
             //     }
             // ));
 
-            let app = MQTTyApplication::get_singleton();
+            // let app = MQTTyApplication::get_singleton();
 
-            let settings = app.settings();
+            // let settings = app.settings();
 
-            let connections = settings.get::<Vec<MQTTyOpenConnection>>("open-connections");
+            // let connections = settings.get::<Vec<MQTTyOpenConnection>>("open-connections");
 
-            // Create add connection card
-            let add_conn_card = gtk::FlowBoxChild::builder()
-                .child(&MQTTyAddConnCard::new())
-                .css_classes(["card", "activatable"])
-                .build();
+            // // Create add connection card
+            // let add_conn_card = gtk::FlowBoxChild::builder()
+            //     .child(&MQTTyAddConnCard::new())
+            //     .css_classes(["card", "activatable"])
+            //     .build();
 
-            let flowbox = &gtk::FlowBox::builder()
-                .homogeneous(true)
-                .column_spacing(16)
-                .row_spacing(16)
-                .valign(gtk::Align::Center)
-                .halign(gtk::Align::Center)
-                .build();
-            flowbox.append(&add_conn_card);
+            // let flowbox = &gtk::FlowBox::builder()
+            //     .homogeneous(true)
+            //     .column_spacing(16)
+            //     .row_spacing(16)
+            //     .valign(gtk::Align::Center)
+            //     .halign(gtk::Align::Center)
+            //     .build();
+            // flowbox.append(&add_conn_card);
 
-            self.nav_view.push(&MQTTyBasePage::new(
-                flowbox,
-                // Some(&gtk::Label::builder().label("Some").build()),
-                gtk::Widget::NONE,
-                &*self.nav_view,
-            ));
+            // self.nav_view.push(&MQTTyBasePage::new(
+            //     flowbox,
+            //     // Some(&gtk::Label::builder().label("Some").build()),
+            //     gtk::Widget::NONE,
+            //     &*self.nav_view,
+            // ));
 
-            // Append all of the open connections widgets
-            for ref conn in connections {
-                let conn_card = MQTTyConnCard::from(conn);
-                flowbox.append(
-                    &gtk::FlowBoxChild::builder()
-                        .child(&conn_card)
-                        .css_classes(["card", "activatable"])
-                        .build(),
-                );
-            }
+            // // Append all of the open connections widgets
+            // for ref conn in connections {
+            //     let conn_card = MQTTyConnCard::from(conn);
+            //     flowbox.append(
+            //         &gtk::FlowBoxChild::builder()
+            //             .child(&conn_card)
+            //             .css_classes(["card", "activatable"])
+            //             .build(),
+            //     );
+            // }
 
-            let nav_view = &self.nav_view;
+            // let nav_view = &self.nav_view;
 
-            flowbox.connect_child_activated(glib::clone!(
-                #[weak]
-                nav_view,
-                move |_, child| {
-                    if child == &add_conn_card {
-                        nav_view.push(&MQTTyBasePage::new(
-                            &gtk::Label::builder().label("Some").build(),
-                            // Some(&gtk::Label::builder().label("Some").build()),
-                            gtk::Widget::NONE,
-                            &nav_view,
-                        ));
-                        return;
-                    }
-                }
-            ));
+            // flowbox.connect_child_activated(glib::clone!(
+            //     #[weak]
+            //     nav_view,
+            //     move |_, child| {
+            //         if child == &add_conn_card {
+            //             nav_view.push(&MQTTyBasePage::new(
+            //                 &gtk::Label::builder().label("Some").build(),
+            //                 // Some(&gtk::Label::builder().label("Some").build()),
+            //                 gtk::Widget::NONE,
+            //                 &nav_view,
+            //             ));
+            //             return;
+            //         }
+            //     }
+            // ));
 
             // TODO: Handle activate signal for self.flowbox, handle connection creation and
             // connection inspection, create another StackPage at the template for prompting

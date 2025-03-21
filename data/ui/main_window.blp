@@ -36,7 +36,11 @@ template $MQTTyWindow: Adw.ApplicationWindow {
 
     // TODO: Use toasts to inform the user about actions made by him (like saving)
     Adw.ToastOverlay toast_overlay {
-      Adw.NavigationView nav_view {}
+      Adw.NavigationView nav_view {
+        $MQTTyAllConnPage {
+          nav_view: nav_view;
+        }
+      }
     }
   }
 }

@@ -12,10 +12,10 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/pages/base_page.ui")]
     #[properties(wrapper_type = super::MQTTyBasePage)]
     pub struct MQTTyBasePage {
-        #[property(construct_only, get)]
+        #[property(get, set)]
         content: RefCell<Option<gtk::Widget>>,
 
-        #[property(construct_only, get)]
+        #[property(get, set)]
         sidebar: RefCell<Option<gtk::Widget>>,
 
         #[property(construct_only)]
@@ -35,6 +35,8 @@ mod imp {
         type Type = super::MQTTyBasePage;
 
         type ParentType = adw::NavigationPage;
+
+        const ABSTRACT: bool = true;
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();

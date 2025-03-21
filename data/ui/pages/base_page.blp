@@ -20,10 +20,8 @@ template $MQTTyBasePage: Adw.NavigationPage {
         show-title: false;
       }
 
-      Adw.Clamp {
-        Adw.Bin {
-          child: bind template.content;
-        }
+      Adw.Bin {
+        child: bind template.content;
       }
     };
   };
