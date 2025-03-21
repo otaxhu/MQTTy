@@ -4,6 +4,7 @@ mod config;
 mod gsettings;
 mod main_window;
 mod pages;
+mod subclass;
 mod widgets;
 
 use gettextrs::{gettext, LocaleCategory};
