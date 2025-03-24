@@ -12,3 +12,4 @@
 /.vscode
 /subprojects/*
 !/subprojects/*.wrap
+!/subprojects/packagefiles/
