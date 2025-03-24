@@ -21,11 +21,19 @@ blueprints = custom_target('blueprints',
   command: [find_program('blueprint-compiler'), 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],
 )
 
+# Sass compilation
+
+css = custom_target('css',
+  input: files('style.scss'),
+  output: 'style.css',
+  command: [find_program('sass'), '--no-source-map', '@INPUT@', '@OUTPUT@']
+)
+
 # Resources
 resources = gnome.compile_resources(
   'MQTTy',
   '@0@.gresource.xml'.format(base_id),
-  dependencies: blueprints,
+  dependencies: [blueprints, css],
   gresource_bundle: true,
   source_dir: meson.current_build_dir(),
   install: true,

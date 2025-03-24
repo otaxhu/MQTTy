@@ -1,0 +1,10 @@
+[wrap-file]
+directory = dart-sass
+# Bump version as needed
+source_url = https://github.com/sass/dart-sass/releases/download/1.86.0/dart-sass-1.86.0-linux-x64.tar.gz
+source_filename = dart-sass-1.86.0-linux-x64.tar.gz
+source_hash = da73e0c544081ed23ce4ec66b1238cbc9a5b80ddfcbde2be41025f3cef40aae6
+patch_directory = dart-sass
+
+[provide]
+program_names = sass
