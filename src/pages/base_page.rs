@@ -18,7 +18,7 @@ mod imp {
         #[property(get, set)]
         sidebar: RefCell<Option<gtk::Widget>>,
 
-        #[property(construct_only)]
+        #[property(construct_only, get)]
         nav_view: RefCell<adw::NavigationView>,
 
         #[property(get, set)]

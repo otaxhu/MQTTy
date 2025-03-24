@@ -4,11 +4,26 @@
 }
 
 .indicator {
-  padding: 16px;
+  padding: 4px;
 }
 
-.card .subtitle {
-  font-size: 12px;
+.indicator.success {
+  background-color: var(--success-bg-color);
 }
 
-.card label {}
+.indicator.circular {
+  border-radius: 100%;
+}
+
+.add-conn-card {
+  background-color: var(--accent-bg-color);
+  color: var(--accent-fg-color);
+}
+
+.add-conn-card:hover {
+  background-color: oklab(from var(--accent-bg-color) calc(l - 5%) a b);
+}
+
+.add-conn-card:active {
+  background-color: oklab(from var(--accent-bg-color) calc(l - 10%) a b);
+}

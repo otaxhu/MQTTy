@@ -5,13 +5,15 @@ template $MQTTyAllConnPage: $MQTTyBasePage {
   title: _("All connections");
 
   content: ScrolledWindow {
+    hscrollbar-policy: never;
+
     FlowBox flowbox {
       margin-top: 64;
       margin-bottom: 64;
       margin-start: 64;
       margin-end: 64;
       halign: center;
-      valign: center;
+      valign: start;
       column-spacing: 16;
       row-spacing: 16;
       homogeneous: true;

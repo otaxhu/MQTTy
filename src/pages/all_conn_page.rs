@@ -3,6 +3,7 @@ use gtk::glib;
 use gtk::prelude::*;
 
 use crate::pages::MQTTyBasePage;
+use crate::pages::MQTTyEditConnPage;
 use crate::subclass::prelude::*;
 use crate::widgets::MQTTyAddConnCard;
 use crate::widgets::MQTTyBaseCard;
@@ -47,12 +48,17 @@ mod imp {
 
             let add_conn_card = &self.add_conn_card;
 
+            let obj = self.obj();
+
+            let nav_view = obj.upcast_ref::<MQTTyBasePage>().nav_view();
+
             self.flowbox.connect_child_activated(glib::clone!(
                 #[weak]
                 add_conn_card,
                 move |_, child| {
                     if child == add_conn_card.upcast_ref::<gtk::FlowBoxChild>() {
-                        println!("ADD CONN");
+                        // TODO: bind/pass a model
+                        nav_view.push(&MQTTyEditConnPage::new(&nav_view));
                     }
                 }
             ));

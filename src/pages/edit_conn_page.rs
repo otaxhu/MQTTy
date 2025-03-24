@@ -11,18 +11,18 @@ mod imp {
 
     use super::*;
 
-    #[derive(Default, gtk::CompositeTemplate, glib::Properties)]
+    #[derive(Default, gtk::CompositeTemplate /*, glib::Properties*/)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/pages/edit_conn_page.ui")]
-    #[properties(wrapper_type = super::MQTTyEditConnPage)]
+    // #[properties(wrapper_type = super::MQTTyEditConnPage)]
     pub struct MQTTyEditConnPage {
-        #[property(get, set)]
-        host: RefCell<String>,
+        // #[property(get, set)]
+        // host: RefCell<String>,
 
-        #[property(get, set)]
-        topic: RefCell<String>,
+        // #[property(get, set)]
+        // topic: RefCell<String>,
 
-        #[property(get, set)]
-        editing: Cell<bool>,
+        // #[property(get, set)]
+        // editing: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -42,7 +42,7 @@ mod imp {
         }
     }
 
-    #[glib::derived_properties]
+    // #[glib::derived_properties]
     impl ObjectImpl for MQTTyEditConnPage {}
     impl WidgetImpl for MQTTyEditConnPage {}
     impl MQTTyBasePageImpl for MQTTyEditConnPage {}
@@ -53,4 +53,13 @@ glib::wrapper! {
     pub struct MQTTyEditConnPage(ObjectSubclass<imp::MQTTyEditConnPage>)
         @extends gtk::Widget, MQTTyBasePage, adw::NavigationPage,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+impl MQTTyEditConnPage {
+    // TODO: bind/pass a model
+    pub fn new(nav_view: &impl IsA<adw::NavigationView>) -> Self {
+        glib::Object::builder()
+            .property("nav_view", nav_view)
+            .build()
+    }
 }
