@@ -1,0 +1,43 @@
+:root {
+  --disabled-bg-color: var(--dark-1);
+}
+
+/* Libadwaita declared colors */
+$indicator-colors: accent success warning error disabled;
+
+@each $color in $indicator-colors {
+  .indicator.#{$color} {
+    --indicator-current-color: var(--#{$color}-bg-color);
+    background-color: var(--indicator-current-color);
+    color: var(--indicator-current-color);
+  }
+
+  /* We are not pulsing this indicators, since they do not represent an activity */
+  @if $color !=warning and $color !=error and $color !=disabled {
+    .indicator.#{$color} {
+      animation: pulse 2s infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(from var(--indicator-current-color) r g b / 70%);
+  }
+
+  70% {
+    box-shadow: 0 0 0 4px rgb(from var(--indicator-current-color) r g b / 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgb(from var(--indicator-current-color) r g b / 0);
+  }
+}
+
+.indicator {
+  padding: 4px;
+}
+
+.indicator.circular {
+  border-radius: 100%;
+}
