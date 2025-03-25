@@ -22,11 +22,15 @@ blueprints = custom_target('blueprints',
 )
 
 # Sass compilation
+sass_files = [
+  'styles/style.scss',
+  'styles/indicator.scss',
+]
 
 css = custom_target('css',
-  input: files('styles/style.scss'),
+  input: files(sass_files),
   output: 'style.css',
-  command: [find_program('sass'), '--no-source-map', '--style=compressed',  '@INPUT@', '@OUTPUT@']
+  command: [find_program('sass'), '--no-source-map', '--style=compressed',  '@INPUT0@', '@OUTPUT@']
 )
 
 # Resources

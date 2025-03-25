@@ -28,10 +28,6 @@ $indicator-colors: accent success warning error disabled;
   70% {
     box-shadow: 0 0 0 4px rgb(from var(--indicator-current-color) r g b / 0);
   }
-
-  100% {
-    box-shadow: 0 0 0 0 rgb(from var(--indicator-current-color) r g b / 0);
-  }
 }
 
 .indicator {
