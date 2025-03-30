@@ -119,7 +119,6 @@ glib::wrapper! {
 }
 
 impl MQTTyEditConnPage {
-    // TODO: bind/pass a model
     /// nth_conn is the N-connection in the GSettings key "connections" array, if -1,
     /// then a new connection will be created
     pub fn new(nav_view: &impl IsA<adw::NavigationView>, nth_conn: i64) -> Self {
