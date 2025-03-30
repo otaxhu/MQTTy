@@ -1,7 +1,8 @@
 use adw::subclass::prelude::*;
-use gtk::glib;
 use gtk::prelude::*;
+use gtk::{gio, glib};
 
+use crate::application::MQTTyApplication;
 use crate::pages::MQTTyBasePage;
 use crate::pages::MQTTyEditConnPage;
 use crate::subclass::prelude::*;
@@ -11,6 +12,8 @@ use crate::widgets::MQTTyConnCard;
 
 mod imp {
 
+    use crate::gsettings::MQTTySettingConnection;
+
     use super::*;
 
     #[derive(Default, gtk::CompositeTemplate)]
@@ -18,9 +21,6 @@ mod imp {
     pub struct MQTTyAllConnPage {
         #[template_child]
         flowbox: TemplateChild<gtk::FlowBox>,
-
-        #[template_child]
-        add_conn_card: TemplateChild<MQTTyAddConnCard>,
     }
 
     #[glib::object_subclass]
@@ -46,37 +46,89 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let add_conn_card = &self.add_conn_card;
+            let add_conn_card = MQTTyAddConnCard::new();
+
+            let app = MQTTyApplication::get_singleton();
+
+            let flowbox = &self.flowbox;
+
+            let mut store = gio::ListStore::new::<MQTTyBaseCard>();
 
             let obj = self.obj();
 
             let nav_view = obj.upcast_ref::<MQTTyBasePage>().nav_view();
 
-            self.flowbox.connect_child_activated(glib::clone!(
-                #[weak]
-                add_conn_card,
-                move |_, child| {
-                    if child == add_conn_card.upcast_ref::<gtk::FlowBoxChild>() {
-                        // TODO: bind/pass a model
-                        nav_view.push(&MQTTyEditConnPage::new(&nav_view));
-                    }
+            let conn_card_from_settings_callback = glib::clone!(
+                #[weak_allow_none]
+                nav_view,
+                move |(i, c): (usize, MQTTySettingConnection)| {
+                    let nav_view = nav_view.unwrap();
+                    let card = MQTTyConnCard::from(c);
+                    card.connect_local("edit-button-clicked", false, move |_| {
+                        nav_view.push(&MQTTyEditConnPage::new(&nav_view, i as i64));
+                        None
+                    });
+                    card
                 }
-            ));
+            );
+
+            store.append(&add_conn_card);
+
+            // DO NOT CHANGE ORDER OF CALL
+            //
+            // See: https://docs.gtk.org/gio/signal.Settings.changed.html#description
+            app.settings().connect_changed(
+                Some("connections"),
+                glib::clone!(
+                    #[weak]
+                    store,
+                    #[strong]
+                    conn_card_from_settings_callback,
+                    move |_, _| {
+                        let app = MQTTyApplication::get_singleton();
+                        let conns = app.settings_connections();
+
+                        store.splice(
+                            1,
+                            store.n_items() - 1,
+                            &conns
+                                .into_iter()
+                                .enumerate()
+                                .map(conn_card_from_settings_callback.clone())
+                                .collect::<Vec<_>>(),
+                        );
+                    }
+                ),
+            );
+
+            // DO NOT CHANGE ORDER OF CALL
+            //
+            // See: https://docs.gtk.org/gio/signal.Settings.changed.html#description
+            store.extend(
+                app.settings_connections()
+                    .into_iter()
+                    .enumerate()
+                    .map(conn_card_from_settings_callback),
+            );
+
+            flowbox.bind_model(Some(&store), |obj| {
+                obj.downcast_ref::<gtk::Widget>().unwrap().clone()
+            });
+
+            flowbox.connect_child_activated(move |_, c| {
+                let i = c.index();
+
+                if i == 0 {
+                    nav_view.push(&MQTTyEditConnPage::new(&nav_view, -1));
+                }
+
+                // TODO: Open like a panel to send and see the MQTT messages for each connection
+            });
         }
     }
     impl WidgetImpl for MQTTyAllConnPage {}
     impl NavigationPageImpl for MQTTyAllConnPage {}
     impl MQTTyBasePageImpl for MQTTyAllConnPage {}
-
-    impl MQTTyAllConnPage {
-        fn append_card(&self, card: &impl IsA<MQTTyBaseCard>) {
-            self.flowbox.append(card.upcast_ref());
-        }
-
-        fn insert_card(&self, card: &impl IsA<MQTTyBaseCard>, position: i32) {
-            self.flowbox.insert(card.upcast_ref(), position);
-        }
-    }
 }
 
 glib::wrapper! {

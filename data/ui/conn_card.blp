@@ -1,5 +1,4 @@
 using Gtk 4.0;
-using Adw 1;
 
 template $MQTTyConnCard: $MQTTyBaseCard {
   prefix_widget: Box {
@@ -11,5 +10,6 @@ template $MQTTyConnCard: $MQTTyBaseCard {
 
   suffix_widget: Button {
     icon-name: "document-edit-symbolic";
+    clicked => $edit_button_clicked() swapped;
   };
 }

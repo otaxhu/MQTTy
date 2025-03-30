@@ -4,12 +4,10 @@ use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
 use crate::config;
-use crate::gsettings::MQTTyOpenConnection;
 use crate::pages::MQTTyAllConnPage;
 use crate::pages::MQTTyBasePage;
 use crate::widgets::MQTTyAddConnCard;
 use crate::widgets::MQTTyBaseCard;
-use crate::widgets::MQTTyConnCard;
 
 mod imp {
 

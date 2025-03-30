@@ -1,4 +1,44 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $MQTTyEditConnPage: $MQTTyBasePage {}
+template $MQTTyEditConnPage: $MQTTyBasePage {
+  content: Adw.Clamp {
+    ListBox {
+      styles [
+        "boxed-list-separate",
+      ]
+
+      Adw.EntryRow url_row {
+        title: _("URL");
+        entry-activated => $on_save_conn() swapped;
+      }
+
+      Adw.EntryRow topic_row {
+        title: _("Topic");
+        entry-activated => $on_save_conn() swapped;
+      }
+
+      Adw.ButtonRow {
+        title: _("Delete");
+        visible: bind template.editing;
+
+        styles [
+          "destructive-action",
+        ]
+
+        activated => $on_delete_conn() swapped;
+      }
+
+      Adw.ButtonRow {
+        title: _("Save");
+        receives-default: true;
+
+        styles [
+          "suggested-action",
+        ]
+
+        activated => $on_save_conn() swapped;
+      }
+    }
+  };
+}

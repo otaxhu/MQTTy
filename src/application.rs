@@ -6,9 +6,11 @@ use gettextrs::gettext;
 use gtk::{gio, glib};
 
 use crate::config;
+use crate::gsettings::MQTTySettingConnection;
 use crate::main_window::MQTTyWindow;
 
 mod imp {
+
     use super::*;
 
     #[derive(Debug, Default)]
@@ -78,6 +80,32 @@ impl MQTTyApplication {
         self.imp()
             .settings
             .get_or_init(|| gio::Settings::new(config::APP_ID))
+    }
+
+    pub fn settings_connections(&self) -> Vec<MQTTySettingConnection> {
+        self.settings().get("connections")
+    }
+
+    pub fn settings_set_connections(&self, conns: Vec<MQTTySettingConnection>) {
+        self.settings().set("connections", conns).unwrap();
+    }
+
+    pub fn settings_set_n_connection(&self, n: i64, conn: MQTTySettingConnection) {
+        let mut conns = self.settings_connections();
+        if n == -1 {
+            conns.push(conn);
+        } else {
+            conns[n as usize] = conn;
+        }
+        self.settings_set_connections(conns);
+    }
+
+    pub fn settings_delete_n_connection(&self, n: i64) {
+        let mut conns = self.settings_connections();
+        println!("{conns:?}");
+        conns.remove(n as usize);
+        println!("{conns:?}");
+        self.settings_set_connections(conns);
     }
 
     fn setup_gactions(&self) {

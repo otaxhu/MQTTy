@@ -1,5 +1,4 @@
 using Gtk 4.0;
-using Adw 1;
 
 template $MQTTyAllConnPage: $MQTTyBasePage {
   title: _("All connections");
@@ -19,8 +18,6 @@ template $MQTTyAllConnPage: $MQTTyBasePage {
       homogeneous: true;
       max-children-per-line: 5;
       selection-mode: none;
-
-      $MQTTyAddConnCard add_conn_card {}
     }
   };
 }

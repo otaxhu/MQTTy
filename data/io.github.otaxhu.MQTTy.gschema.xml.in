@@ -23,7 +23,7 @@
             topic: String;
           }
      -->
-    <key name="open-connections" type="a(ss)">
+    <key name="connections" type="a(ss)">
       <default>[]</default>
       <summary>List of open connections</summary>
     </key>
