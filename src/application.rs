@@ -102,9 +102,7 @@ impl MQTTyApplication {
 
     pub fn settings_delete_n_connection(&self, n: i64) {
         let mut conns = self.settings_connections();
-        println!("{conns:?}");
         conns.remove(n as usize);
-        println!("{conns:?}");
         self.settings_set_connections(conns);
     }
 
