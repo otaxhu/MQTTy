@@ -4,13 +4,12 @@ use adw::subclass::prelude::*;
 use gtk::glib;
 use gtk::prelude::*;
 
+use crate::application::MQTTyApplication;
 use crate::gsettings::MQTTySettingConnection;
 use crate::pages::MQTTyBasePage;
 use crate::subclass::prelude::*;
 
 mod imp {
-
-    use crate::application::MQTTyApplication;
 
     use super::*;
 

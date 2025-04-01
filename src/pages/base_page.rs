@@ -16,16 +16,28 @@ mod imp {
         content: RefCell<Option<gtk::Widget>>,
 
         #[property(get, set)]
-        sidebar: RefCell<Option<gtk::Widget>>,
+        title_widget: RefCell<Option<gtk::Widget>>,
+
+        #[property(get, set)]
+        bottom_widget: RefCell<Option<gtk::Widget>>,
 
         #[property(construct_only, get)]
         nav_view: RefCell<adw::NavigationView>,
 
+        /// This field exists to stop recursive expressions, this should be used in the
+        /// base_page.blp template, and descendants of this class should use "reveal_top_bar"
+        /// property in order to force the reveal of the top bar
         #[property(get, set)]
-        is_header_bar_visible: Cell<bool>,
+        private_reveal_top_bar: Cell<bool>,
+
+        #[property(get, set)]
+        reveal_top_bar: Cell<bool>,
+
+        #[property(get, set)]
+        reveal_bottom_bar: Cell<bool>,
 
         #[template_child]
-        sidebar_button: TemplateChild<gtk::ToggleButton>,
+        header_bar: TemplateChild<adw::HeaderBar>,
     }
 
     #[glib::object_subclass]
@@ -71,24 +83,33 @@ mod imp {
 
             let obj = self.obj();
 
-            let some_sidebar = obj
-                .property_expression_weak("sidebar")
+            let some_title_widget = obj
+                .property_expression_weak("title_widget")
                 .chain_closure::<bool>(glib::closure!(
-                    |_: Option<glib::Object>, sidebar: Option<gtk::Widget>| { sidebar.is_some() }
+                    |_: Option<glib::Object>, title_widget: Option<gtk::Widget>| {
+                        title_widget.is_some()
+                    }
                 ));
 
-            some_sidebar.bind(&*self.sidebar_button, "visible", glib::Object::NONE);
+            some_title_widget.bind(&*self.header_bar, "show-title", glib::Object::NONE);
 
-            let is_header_bar_visible = ClosureExpression::new::<bool>(
-                [this_page_has_previous.upcast(), some_sidebar.upcast()],
+            let reveal_top_bar = obj.property_expression_weak("reveal_top_bar");
+
+            let private_reveal_top_bar = ClosureExpression::new::<bool>(
+                [
+                    this_page_has_previous.upcast(),
+                    some_title_widget.upcast(),
+                    reveal_top_bar.upcast(),
+                ],
                 glib::closure!(|_: Option<glib::Object>,
                                 this_page_has_previous: bool,
-                                some_sidebar: bool| {
-                    this_page_has_previous || some_sidebar
+                                some_title_widget: bool,
+                                reveal_top_bar: bool| {
+                    this_page_has_previous || some_title_widget || reveal_top_bar
                 }),
             );
 
-            is_header_bar_visible.bind(&*obj, "is_header_bar_visible", Some(&*obj));
+            private_reveal_top_bar.bind(&*obj, "private_reveal_top_bar", Some(&*obj));
         }
     }
     impl WidgetImpl for MQTTyBasePage {}
