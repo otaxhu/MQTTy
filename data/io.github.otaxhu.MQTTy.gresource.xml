@@ -13,5 +13,10 @@
     <file compressed="true" preprocess="xml-stripblanks">ui/pages/base_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/pages/edit_conn_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/pages/all_conn_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/pages/panel_page.ui</file>
+
+    <!-- Icons -->
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/chat-bubbles-empty-symbolic.svg</file>
   </gresource>
 </gresources>

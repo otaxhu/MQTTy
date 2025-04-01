@@ -22,8 +22,6 @@ mod imp {
         type ParentType = MQTTyBaseCard;
 
         fn class_init(klass: &mut Self::Class) {
-            MQTTyBaseCard::static_type();
-
             klass.bind_template();
         }
 

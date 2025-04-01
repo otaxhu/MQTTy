@@ -4,10 +4,6 @@ use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
 use crate::config;
-use crate::pages::MQTTyAllConnPage;
-use crate::pages::MQTTyBasePage;
-use crate::widgets::MQTTyAddConnCard;
-use crate::widgets::MQTTyBaseCard;
 
 mod imp {
 
@@ -27,11 +23,6 @@ mod imp {
         type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
-            MQTTyBasePage::static_type();
-            MQTTyAllConnPage::static_type();
-            MQTTyBaseCard::static_type();
-            MQTTyAddConnCard::static_type();
-
             klass.bind_template();
         }
 

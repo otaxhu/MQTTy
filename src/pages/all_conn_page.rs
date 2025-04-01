@@ -3,16 +3,16 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
+use crate::gsettings::MQTTySettingConnection;
 use crate::pages::MQTTyBasePage;
 use crate::pages::MQTTyEditConnPage;
+use crate::pages::MQTTyPanelPage;
 use crate::subclass::prelude::*;
 use crate::widgets::MQTTyAddConnCard;
 use crate::widgets::MQTTyBaseCard;
 use crate::widgets::MQTTyConnCard;
 
 mod imp {
-
-    use crate::gsettings::MQTTySettingConnection;
 
     use super::*;
 
@@ -32,9 +32,6 @@ mod imp {
         type ParentType = MQTTyBasePage;
 
         fn class_init(klass: &mut Self::Class) {
-            MQTTyAddConnCard::static_type();
-            MQTTyConnCard::static_type();
-
             klass.bind_template();
         }
 
@@ -120,9 +117,10 @@ mod imp {
 
                 if i == 0 {
                     nav_view.push(&MQTTyEditConnPage::new(&nav_view, -1));
+                    return;
                 }
 
-                // TODO: Open like a panel to send and see the MQTT messages for each connection
+                nav_view.push(&MQTTyPanelPage::new(&nav_view, i as u32));
             });
         }
     }

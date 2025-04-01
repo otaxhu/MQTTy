@@ -1,0 +1,51 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTyPanelPage: $MQTTyBasePage {
+  reveal_top_widget: true;
+  reveal_bottom_bar: false;
+
+  title_widget: Adw.ViewSwitcher {
+    stack: stack;
+    policy: wide;
+  };
+
+  content: Adw.BreakpointBin {
+    Adw.Breakpoint {
+      condition ("max-width: 500sp")
+
+      setters {
+        template.reveal_top_widget: false;
+        template.reveal_bottom_bar: true;
+      }
+    }
+
+    child: Adw.ViewStack stack {
+      Adw.ViewStackPage {
+        title: _("Send");
+        icon-name: "send-symbolic";
+
+        child: Label {};
+      }
+
+      Adw.ViewStackPage {
+        title: _("Messages");
+        icon-name: "chat-bubbles-empty-symbolic";
+
+        child: Label {};
+      }
+
+      Adw.ViewStackPage {
+        title: _("Edit");
+        icon-name: "document-edit-symbolic";
+
+        child: Label {};
+      }
+    };
+  };
+
+  bottom_widget: Adw.ViewSwitcherBar {
+    stack: stack;
+    reveal: bind template.reveal_bottom_bar;
+  };
+}

@@ -10,6 +10,9 @@ template $MQTTyBasePage: Adw.NavigationPage {
     Adw.HeaderBar header_bar {
       decoration-layout: "";
       title-widget: bind template.title_widget;
+      // Binded reveal_top_bar to show-title so that descendant classes can show it through
+      // Adw.Breakpoint's
+      show-title: bind template.reveal_top_widget;
     }
 
     Adw.Bin {
@@ -17,8 +20,12 @@ template $MQTTyBasePage: Adw.NavigationPage {
     }
 
     [bottom]
-    Adw.HeaderBar {
-      title-widget: bind template.bottom_widget;
+    Adw.Bin {
+      styles [
+        "toolbar",
+      ]
+
+      child: bind template.bottom_widget;
     }
   };
 }

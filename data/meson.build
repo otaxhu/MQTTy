@@ -8,6 +8,7 @@ blueprint_files = [
   'ui/pages/base_page.blp',
   'ui/pages/all_conn_page.blp',
   'ui/pages/edit_conn_page.blp',
+  'ui/pages/panel_page.blp',
 ]
 
 blueprint_targets = []

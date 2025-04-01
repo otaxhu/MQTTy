@@ -8,6 +8,8 @@ use gtk::{gio, glib};
 use crate::config;
 use crate::gsettings::MQTTySettingConnection;
 use crate::main_window::MQTTyWindow;
+use crate::pages::{MQTTyAllConnPage, MQTTyBasePage, MQTTyEditConnPage, MQTTyPanelPage};
+use crate::widgets::{MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard};
 
 mod imp {
 
@@ -23,6 +25,24 @@ mod imp {
         const NAME: &'static str = "MQTTyApplication";
         type Type = super::MQTTyApplication;
         type ParentType = adw::Application;
+
+        fn class_init(_klass: &mut Self::Class) {
+            // Eagerly initialize everything
+
+            MQTTyWindow::static_type();
+            MQTTySettingConnection::static_type();
+
+            // Widgets
+            MQTTyBaseCard::static_type();
+            MQTTyAddConnCard::static_type();
+            MQTTyConnCard::static_type();
+
+            // Pages
+            MQTTyBasePage::static_type();
+            MQTTyAllConnPage::static_type();
+            MQTTyEditConnPage::static_type();
+            MQTTyPanelPage::static_type();
+        }
     }
 
     impl ObjectImpl for MQTTyApplication {}

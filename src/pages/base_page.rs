@@ -25,13 +25,13 @@ mod imp {
         nav_view: RefCell<adw::NavigationView>,
 
         /// This field exists to stop recursive expressions, this should be used in the
-        /// base_page.blp template, and descendants of this class should use "reveal_top_bar"
-        /// property in order to force the reveal of the top bar
+        /// base_page.blp template, and descendants of this class should use "reveal_top_widget"
+        /// property in order to hint the reveal of the top widget
         #[property(get, set)]
         private_reveal_top_bar: Cell<bool>,
 
         #[property(get, set)]
-        reveal_top_bar: Cell<bool>,
+        reveal_top_widget: Cell<bool>,
 
         #[property(get, set)]
         reveal_bottom_bar: Cell<bool>,
@@ -83,29 +83,14 @@ mod imp {
 
             let obj = self.obj();
 
-            let some_title_widget = obj
-                .property_expression_weak("title_widget")
-                .chain_closure::<bool>(glib::closure!(
-                    |_: Option<glib::Object>, title_widget: Option<gtk::Widget>| {
-                        title_widget.is_some()
-                    }
-                ));
-
-            some_title_widget.bind(&*self.header_bar, "show-title", glib::Object::NONE);
-
-            let reveal_top_bar = obj.property_expression_weak("reveal_top_bar");
+            let reveal_top_widget = obj.property_expression_weak("reveal_top_widget");
 
             let private_reveal_top_bar = ClosureExpression::new::<bool>(
-                [
-                    this_page_has_previous.upcast(),
-                    some_title_widget.upcast(),
-                    reveal_top_bar.upcast(),
-                ],
+                [this_page_has_previous.upcast(), reveal_top_widget.upcast()],
                 glib::closure!(|_: Option<glib::Object>,
                                 this_page_has_previous: bool,
-                                some_title_widget: bool,
-                                reveal_top_bar: bool| {
-                    this_page_has_previous || some_title_widget || reveal_top_bar
+                                reveal_top_widget: bool| {
+                    this_page_has_previous || reveal_top_widget
                 }),
             );
 
