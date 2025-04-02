@@ -1,6 +1,5 @@
 using Gtk 4.0;
 using Adw 1;
-using Pango 1.0;
 
 template $MQTTyBaseCard: FlowBoxChild {
   styles [
@@ -8,64 +7,53 @@ template $MQTTyBaseCard: FlowBoxChild {
     "card",
   ]
 
-  CenterBox {
+  Box {
     margin-top: 16;
     margin-bottom: 16;
     margin-start: 16;
     margin-end: 16;
+    spacing: 16;
 
-    [start]
-    Box {
-      spacing: 16;
-
-      Adw.Bin {
-        valign: center;
-        child: bind template.prefix_widget;
-      }
-
-      CenterBox {
-        valign: center;
-        orientation: vertical;
-        shrink-center-last: true;
-
-        styles [
-          "center-widget",
-        ]
-
-        [center]
-        Label title_label {
-          label: bind template.title;
-          // TODO: Is this is a fair amount?
-          max-width-chars: 60;
-          ellipsize: middle;
-          xalign: 0;
-
-          styles [
-            "heading",
-          ]
-        }
-
-        [end]
-        Label subtitle_label {
-          label: bind template.subtitle;
-          // TODO: Is this a fair amount?
-          max-width-chars: 60;
-          ellipsize: middle;
-          xalign: 0;
-
-          styles [
-            "dim-label",
-            "caption",
-          ]
-        }
-      }
-    }
-
-    [end]
     Adw.Bin {
       valign: center;
-      margin-start: 16;
-      child: bind template.suffix_widget;
+      child: bind template.prefix_widget;
+    }
+
+    CenterBox {
+      valign: center;
+      orientation: vertical;
+      shrink-center-last: true;
+
+      styles [
+        "center-widget",
+      ]
+
+      [center]
+      Label title_label {
+        label: bind template.title;
+        // TODO: Is this is a fair amount?
+        max-width-chars: 60;
+        ellipsize: middle;
+        xalign: 0;
+
+        styles [
+          "heading",
+        ]
+      }
+
+      [end]
+      Label subtitle_label {
+        label: bind template.subtitle;
+        // TODO: Is this a fair amount?
+        max-width-chars: 60;
+        ellipsize: middle;
+        xalign: 0;
+
+        styles [
+          "dim-label",
+          "caption",
+        ]
+      }
     }
   }
 }

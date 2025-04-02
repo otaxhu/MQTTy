@@ -5,11 +5,7 @@ template $MQTTyConnCard: $MQTTyBaseCard {
     styles [
       "indicator",
       "circular",
+      "disabled",
     ]
-  };
-
-  suffix_widget: Button {
-    icon-name: "document-edit-symbolic";
-    clicked => $edit_button_clicked() swapped;
   };
 }

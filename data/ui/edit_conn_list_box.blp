@@ -1,0 +1,50 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTyEditConnListBox: Adw.Bin {
+  ScrolledWindow {
+    Adw.Clamp {
+      ListBox {
+        margin-top: 16;
+        margin-bottom: 16;
+        margin-start: 16;
+        margin-end: 16;
+
+        styles [
+          "boxed-list-separate",
+        ]
+
+        Adw.EntryRow url_row {
+          title: _("URL");
+          entry-activated => $on_save_conn() swapped;
+        }
+
+        Adw.EntryRow topic_row {
+          title: _("Topic");
+          entry-activated => $on_save_conn() swapped;
+        }
+
+        Adw.ButtonRow {
+          title: _("Delete");
+          visible: bind template.editing;
+
+          styles [
+            "destructive-action",
+          ]
+
+          activated => $on_delete_conn() swapped;
+        }
+
+        Adw.ButtonRow {
+          title: _("Save");
+
+          styles [
+            "suggested-action",
+          ]
+
+          activated => $on_save_conn() swapped;
+        }
+      }
+    }
+  }
+}

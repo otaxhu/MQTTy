@@ -3,9 +3,8 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
-use crate::gsettings::MQTTySettingConnection;
+use crate::pages::MQTTyAddConnPage;
 use crate::pages::MQTTyBasePage;
-use crate::pages::MQTTyEditConnPage;
 use crate::pages::MQTTyPanelPage;
 use crate::subclass::prelude::*;
 use crate::widgets::MQTTyAddConnCard;
@@ -55,20 +54,6 @@ mod imp {
 
             let nav_view = obj.upcast_ref::<MQTTyBasePage>().nav_view();
 
-            let conn_card_from_settings_callback = glib::clone!(
-                #[weak_allow_none]
-                nav_view,
-                move |(i, c): (usize, MQTTySettingConnection)| {
-                    let nav_view = nav_view.unwrap();
-                    let card = MQTTyConnCard::from(c);
-                    card.connect_local("edit-button-clicked", false, move |_| {
-                        nav_view.push(&MQTTyEditConnPage::new(&nav_view, i as i64));
-                        None
-                    });
-                    card
-                }
-            );
-
             store.append(&add_conn_card);
 
             // DO NOT CHANGE ORDER OF CALL
@@ -79,8 +64,6 @@ mod imp {
                 glib::clone!(
                     #[weak]
                     store,
-                    #[strong]
-                    conn_card_from_settings_callback,
                     move |_, _| {
                         let app = MQTTyApplication::get_singleton();
                         let conns = app.settings_connections();
@@ -90,8 +73,7 @@ mod imp {
                             store.n_items() - 1,
                             &conns
                                 .into_iter()
-                                .enumerate()
-                                .map(conn_card_from_settings_callback.clone())
+                                .map(MQTTyConnCard::from)
                                 .collect::<Vec<_>>(),
                         );
                     }
@@ -104,8 +86,7 @@ mod imp {
             store.extend(
                 app.settings_connections()
                     .into_iter()
-                    .enumerate()
-                    .map(conn_card_from_settings_callback),
+                    .map(MQTTyConnCard::from),
             );
 
             flowbox.bind_model(Some(&store), |obj| {
@@ -116,11 +97,11 @@ mod imp {
                 let i = c.index();
 
                 if i == 0 {
-                    nav_view.push(&MQTTyEditConnPage::new(&nav_view, -1));
+                    nav_view.push(&MQTTyAddConnPage::new(&nav_view));
                     return;
                 }
 
-                nav_view.push(&MQTTyPanelPage::new(&nav_view, i as u32));
+                nav_view.push(&MQTTyPanelPage::new(&nav_view, (i - 1) as u32));
             });
         }
     }

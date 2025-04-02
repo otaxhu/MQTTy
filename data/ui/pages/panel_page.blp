@@ -39,7 +39,12 @@ template $MQTTyPanelPage: $MQTTyBasePage {
         title: _("Edit");
         icon-name: "document-edit-symbolic";
 
-        child: Label {};
+        child: $MQTTyEditConnListBox {
+          editing: true;
+          saving-conn => $on_save_conn() swapped;
+          deleting-conn => $on_delete_conn() swapped;
+          conn_model: bind template.conn_model;
+        };
       }
     };
   };

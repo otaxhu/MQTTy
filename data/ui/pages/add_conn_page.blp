@@ -1,0 +1,11 @@
+using Gtk 4.0;
+
+template $MQTTyAddConnPage: $MQTTyBasePage {
+  title: _("Edit connection");
+
+  content: $MQTTyEditConnListBox {
+    editing: false;
+    conn_model: bind template.conn_model;
+    saving-conn => $on_save_conn() swapped;
+  };
+}

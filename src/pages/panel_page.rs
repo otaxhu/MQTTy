@@ -1,9 +1,11 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
 
+use crate::application::MQTTyApplication;
+use crate::gsettings::MQTTySettingConnection;
 use crate::pages::MQTTyBasePage;
 use crate::subclass::prelude::*;
 
@@ -19,6 +21,9 @@ mod imp {
         /// data, it's unsigned integer because we expect to retrieve always valid data
         #[property(get, set, construct)]
         nth_conn: Cell<u32>,
+
+        #[property(get, set)]
+        conn_model: RefCell<MQTTySettingConnection>,
     }
 
     #[glib::object_subclass]
@@ -31,6 +36,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
+            klass.bind_template_callbacks();
         }
 
         fn instance_init(obj: &glib::subclass::types::InitializingObject<Self>) {
@@ -39,10 +45,45 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MQTTyPanelPage {}
+    impl ObjectImpl for MQTTyPanelPage {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let app = MQTTyApplication::get_singleton();
+
+            let obj = self.obj();
+
+            let conn_model = app.settings_n_connection(obj.nth_conn() as usize).unwrap();
+
+            obj.set_conn_model(conn_model);
+        }
+    }
     impl WidgetImpl for MQTTyPanelPage {}
     impl NavigationPageImpl for MQTTyPanelPage {}
     impl MQTTyBasePageImpl for MQTTyPanelPage {}
+
+    #[gtk::template_callbacks]
+    impl MQTTyPanelPage {
+        #[template_callback]
+        fn on_save_conn(&self) {
+            let app = MQTTyApplication::get_singleton();
+
+            let obj = self.obj();
+
+            app.settings_set_n_connection(obj.nth_conn().into(), obj.conn_model());
+        }
+
+        #[template_callback]
+        fn on_delete_conn(&self) {
+            let app = MQTTyApplication::get_singleton();
+
+            let obj = self.obj();
+
+            app.settings_delete_n_connection(obj.nth_conn() as usize);
+
+            obj.activate_action("navigation.pop", None).unwrap();
+        }
+    }
 }
 
 glib::wrapper! {

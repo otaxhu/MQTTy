@@ -107,20 +107,6 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
-impl MQTTyBasePage {
-    pub fn new<'a>(
-        content: &impl IsA<gtk::Widget>,
-        sidebar: Option<&impl IsA<gtk::Widget>>,
-        nav_view: &impl IsA<adw::NavigationView>,
-    ) -> Self {
-        glib::Object::builder()
-            .property("content", content)
-            .property("sidebar", sidebar)
-            .property("nav_view", nav_view)
-            .build()
-    }
-}
-
 pub trait MQTTyBasePageImpl: NavigationPageImpl {}
 
 unsafe impl<T: MQTTyBasePageImpl> IsSubclassable<T> for MQTTyBasePage {}

@@ -5,9 +5,10 @@ blueprint_files = [
   'ui/add_conn_card.blp',
   'ui/conn_card.blp',
   'ui/base_card.blp',
+  'ui/edit_conn_list_box.blp',
   'ui/pages/base_page.blp',
   'ui/pages/all_conn_page.blp',
-  'ui/pages/edit_conn_page.blp',
+  'ui/pages/add_conn_page.blp',
   'ui/pages/panel_page.blp',
 ]
 

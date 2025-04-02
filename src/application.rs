@@ -8,8 +8,8 @@ use gtk::{gio, glib};
 use crate::config;
 use crate::gsettings::MQTTySettingConnection;
 use crate::main_window::MQTTyWindow;
-use crate::pages::{MQTTyAllConnPage, MQTTyBasePage, MQTTyEditConnPage, MQTTyPanelPage};
-use crate::widgets::{MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard};
+use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanelPage};
+use crate::widgets::{MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox};
 
 mod imp {
 
@@ -36,11 +36,12 @@ mod imp {
             MQTTyBaseCard::static_type();
             MQTTyAddConnCard::static_type();
             MQTTyConnCard::static_type();
+            MQTTyEditConnListBox::static_type();
 
             // Pages
             MQTTyBasePage::static_type();
             MQTTyAllConnPage::static_type();
-            MQTTyEditConnPage::static_type();
+            MQTTyAddConnPage::static_type();
             MQTTyPanelPage::static_type();
         }
     }
@@ -106,6 +107,10 @@ impl MQTTyApplication {
         self.settings().get("connections")
     }
 
+    pub fn settings_n_connection(&self, n: usize) -> Option<MQTTySettingConnection> {
+        self.settings_connections().get(n).cloned()
+    }
+
     pub fn settings_set_connections(&self, conns: Vec<MQTTySettingConnection>) {
         self.settings().set("connections", conns).unwrap();
     }
@@ -120,9 +125,9 @@ impl MQTTyApplication {
         self.settings_set_connections(conns);
     }
 
-    pub fn settings_delete_n_connection(&self, n: i64) {
+    pub fn settings_delete_n_connection(&self, n: usize) {
         let mut conns = self.settings_connections();
-        conns.remove(n as usize);
+        conns.remove(n);
         self.settings_set_connections(conns);
     }
 

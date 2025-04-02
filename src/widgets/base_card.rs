@@ -16,9 +16,6 @@ mod imp {
         prefix_widget: RefCell<Option<gtk::Widget>>,
 
         #[property(get, set)]
-        suffix_widget: RefCell<Option<gtk::Widget>>,
-
-        #[property(get, set)]
         title: RefCell<String>,
 
         #[property(get, set)]
