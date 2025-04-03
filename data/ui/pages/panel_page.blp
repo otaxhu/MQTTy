@@ -11,8 +11,11 @@ template $MQTTyPanelPage: $MQTTyBasePage {
   };
 
   content: Adw.BreakpointBin {
+    width-request: 1;
+    height-request: 1;
+
     Adw.Breakpoint {
-      condition ("max-width: 500sp")
+      condition ("max-width: 600sp")
 
       setters {
         template.reveal_top_widget: false;
