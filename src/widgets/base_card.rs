@@ -48,27 +48,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MQTTyBaseCard {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            let show_label = gtk::PropertyExpression::new(
-                gtk::Label::static_type(),
-                gtk::Expression::NONE, // Queries the property on binded "this" object
-                "label",
-            )
-            .chain_closure::<bool>(glib::closure!(|_: gtk::Label, label: String| {
-                label != ""
-            }));
-
-            show_label.bind(
-                &*self.subtitle_label,
-                "visible",
-                Some(&*self.subtitle_label),
-            );
-            show_label.bind(&*self.title_label, "visible", Some(&*self.title_label));
-        }
-    }
+    impl ObjectImpl for MQTTyBaseCard {}
     impl WidgetImpl for MQTTyBaseCard {}
     impl FlowBoxChildImpl for MQTTyBaseCard {}
 }
