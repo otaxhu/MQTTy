@@ -55,6 +55,9 @@ mod imp {
 
             let conn_model = app.settings_n_connection(obj.nth_conn() as usize).unwrap();
 
+            obj.upcast_ref::<adw::NavigationPage>()
+                .set_title(&conn_model.topic());
+
             obj.set_conn_model(conn_model);
         }
     }
@@ -70,7 +73,12 @@ mod imp {
 
             let obj = self.obj();
 
-            app.settings_set_n_connection(obj.nth_conn().into(), obj.conn_model());
+            let conn_model = obj.conn_model();
+
+            app.settings_set_n_connection(obj.nth_conn().into(), conn_model.clone());
+
+            obj.upcast_ref::<adw::NavigationPage>()
+                .set_title(&conn_model.topic());
         }
 
         #[template_callback]
