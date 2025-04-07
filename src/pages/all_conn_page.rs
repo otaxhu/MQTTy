@@ -3,6 +3,7 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
+use crate::gsettings::MQTTySettingConnection;
 use crate::pages::MQTTyAddConnPage;
 use crate::pages::MQTTyBasePage;
 use crate::pages::MQTTyPanelPage;
@@ -59,12 +60,11 @@ mod imp {
             // DO NOT CHANGE ORDER OF CALL
             //
             // See: https://docs.gtk.org/gio/signal.Settings.changed.html#description
-            app.settings().connect_changed(
-                Some("connections"),
-                glib::clone!(
+            app.settings_connections()
+                .connect_items_changed(glib::clone!(
                     #[weak]
                     store,
-                    move |_, _| {
+                    move |_, _, _, _| {
                         let app = MQTTyApplication::get_singleton();
                         let conns = app.settings_connections();
 
@@ -73,12 +73,12 @@ mod imp {
                             store.n_items() - 1,
                             &conns
                                 .into_iter()
+                                .map(|i| i.unwrap().downcast::<MQTTySettingConnection>().unwrap())
                                 .map(MQTTyConnCard::from)
                                 .collect::<Vec<_>>(),
                         );
                     }
-                ),
-            );
+                ));
 
             // DO NOT CHANGE ORDER OF CALL
             //
@@ -86,6 +86,7 @@ mod imp {
             store.extend(
                 app.settings_connections()
                     .into_iter()
+                    .map(|i| i.unwrap().downcast::<MQTTySettingConnection>().unwrap())
                     .map(MQTTyConnCard::from),
             );
 

@@ -53,7 +53,7 @@ mod imp {
 
             let obj = self.obj();
 
-            let conn_model = app.settings_n_connection(obj.nth_conn() as usize).unwrap();
+            let conn_model = app.settings_n_connection(obj.nth_conn()).unwrap();
 
             obj.upcast_ref::<adw::NavigationPage>()
                 .set_title(&conn_model.topic());
@@ -87,7 +87,7 @@ mod imp {
 
             let obj = self.obj();
 
-            app.settings_delete_n_connection(obj.nth_conn() as usize);
+            app.settings_delete_n_connection(obj.nth_conn());
 
             obj.activate_action("navigation.pop", None).unwrap();
         }

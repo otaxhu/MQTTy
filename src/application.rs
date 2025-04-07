@@ -1,10 +1,12 @@
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
+use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{gio, glib};
 
+use crate::client::MQTTyClient;
 use crate::config;
 use crate::gsettings::MQTTySettingConnection;
 use crate::main_window::MQTTyWindow;
@@ -15,9 +17,25 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Default)]
     pub struct MQTTyApplication {
         pub settings: OnceCell<gio::Settings>,
+
+        /// The type of items inside of ListStore is MQTTySettingConnection
+        pub settings_conns: OnceCell<gio::ListStore>,
+
+        /// This clients are index mapped 1-to-1 to the settings_conns, they are separated
+        /// because they cannot be tupled and passed to a gio::ListStore, and also because
+        /// we are disconnecting the corresponding client if any MQTTySettingConnection was
+        /// deleted, because the settings_conns::items-changed passes the already mutated list,
+        /// we have to search for the mqtt connection in this Vec, disconnect it and remove it.
+        ///
+        /// IMPORTANT:
+        ///
+        /// Listen to settings_conns::items-changed signal for connections removals or
+        /// connections additions, and act accordingly (by disconnecting the MQTT client or
+        /// connecting a new one, respectively)
+        pub clients: Rc<RefCell<Vec<MQTTyClient>>>,
     }
 
     #[glib::object_subclass]
@@ -73,6 +91,8 @@ mod imp {
             app.setup_css();
             app.setup_gactions();
             app.setup_accels();
+
+            app.setup_settings();
         }
     }
 
@@ -103,32 +123,107 @@ impl MQTTyApplication {
             .get_or_init(|| gio::Settings::new(config::APP_ID))
     }
 
-    pub fn settings_connections(&self) -> Vec<MQTTySettingConnection> {
-        self.settings().get("connections")
+    pub fn settings_connections(&self) -> &gio::ListStore {
+        self.imp()
+            .settings_conns
+            .get_or_init(|| gio::ListStore::new::<MQTTySettingConnection>())
     }
 
-    pub fn settings_n_connection(&self, n: usize) -> Option<MQTTySettingConnection> {
-        self.settings_connections().get(n).cloned()
-    }
-
-    pub fn settings_set_connections(&self, conns: Vec<MQTTySettingConnection>) {
-        self.settings().set("connections", conns).unwrap();
+    pub fn settings_n_connection(&self, n: u32) -> Option<MQTTySettingConnection> {
+        self.settings_connections()
+            .item(n)
+            .map(|o| o.downcast::<MQTTySettingConnection>().unwrap())
     }
 
     pub fn settings_set_n_connection(&self, n: i64, conn: MQTTySettingConnection) {
-        let mut conns = self.settings_connections();
+        let conns = self.settings_connections();
         if n == -1 {
-            conns.push(conn);
+            conns.append(&conn);
         } else {
-            conns[n as usize] = conn;
+            conns.splice(n as u32, 1, &[conn]);
         }
-        self.settings_set_connections(conns);
     }
 
-    pub fn settings_delete_n_connection(&self, n: usize) {
-        let mut conns = self.settings_connections();
+    pub fn settings_delete_n_connection(&self, n: u32) {
+        let conns = self.settings_connections();
         conns.remove(n);
-        self.settings_set_connections(conns);
+    }
+
+    pub fn clients(&self) -> &Rc<RefCell<Vec<MQTTyClient>>> {
+        &self.imp().clients
+    }
+
+    /// We are only requesting the GSettings on startup to prevent infinite recursion,
+    /// e.g. app.settings_connections()::items-changed it's emitted, it is saved to
+    /// external GSettings, GSettings::changed it's emitted, app.settings_connections() gets
+    /// updated with external settings,
+    /// app.settings_connections()::items-changed it's emitted again, etc.
+    fn setup_settings(&self) {
+        let settings = self.settings();
+
+        let external_conns = settings.get::<Vec<MQTTySettingConnection>>("connections");
+
+        let app_conns = self.settings_connections();
+
+        app_conns.extend_from_slice(&external_conns);
+
+        let clients_ref = self.clients();
+
+        let mut clients_mut = clients_ref.borrow_mut();
+        clients_mut.reserve(external_conns.len());
+
+        for conn in app_conns
+            .iter::<MQTTySettingConnection>()
+            .map(|i| i.unwrap())
+        {
+            let connection = MQTTyClient::new(&conn);
+
+            clients_mut.push(connection);
+        }
+
+        // Save settings to external GSettings, and creating MQTT clients for each one
+        app_conns.connect_items_changed(glib::clone!(
+            #[strong]
+            settings,
+            #[strong]
+            clients_ref,
+            move |list: &gio::ListStore, pos, rem, add| {
+                let mut clients_mut = clients_ref.borrow_mut();
+
+                settings
+                    .set(
+                        "connections",
+                        list.iter::<MQTTySettingConnection>()
+                            .map(|i| i.unwrap().downcast::<MQTTySettingConnection>().unwrap())
+                            .collect::<Vec<_>>(),
+                    )
+                    .unwrap();
+
+                let pos = pos as usize;
+                let rem = rem as usize;
+                let add = add as usize;
+
+                // Removals
+                for client in clients_mut.splice(pos..pos + rem, None) {
+                    client.disconnect_client();
+                }
+
+                // Additions
+                clients_mut.reserve(add);
+
+                for i in pos..pos + add {
+                    let new_client = MQTTyClient::new(
+                        &list
+                            .item(i as u32)
+                            .unwrap()
+                            .downcast::<MQTTySettingConnection>()
+                            .unwrap(),
+                    );
+
+                    clients_mut.insert(i, new_client);
+                }
+            }
+        ));
     }
 
     fn setup_gactions(&self) {
