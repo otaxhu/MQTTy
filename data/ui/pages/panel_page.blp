@@ -6,33 +6,76 @@ template $MQTTyPanelPage: $MQTTyBasePage {
   reveal_bottom_bar: false;
 
   title_widget: Adw.ViewSwitcher {
-    stack: stack;
+    stack: view_stack;
     policy: wide;
+  };
+
+  top_end_widget: Button {
+    styles [
+      "suggested-action",
+    ]
+
+    label: _("Send");
   };
 
   content: Adw.BreakpointBin {
     width-request: 1;
-    height-request: 1;
-
+    height-request: 300; // Goodbye awful warning
     Adw.Breakpoint {
-      condition ("max-width: 600sp")
+      condition ("max-width: 700sp")
 
       setters {
         template.reveal_top_widget: false;
         template.reveal_bottom_bar: true;
+        paned.orientation: vertical;
+        outer_scrolled_window.vscrollbar-policy: automatic;
+        start_scrolled_window.vscrollbar-policy: never;
+        paned.position: 0;
       }
     }
 
-    child: Adw.ViewStack stack {
+    child: Adw.ViewStack view_stack {
       Adw.ViewStackPage {
-        title: _("Send");
+        title: _("Publish");
+        name: "publish";
         icon-name: "send-symbolic";
 
-        child: Label {};
+        child: ScrolledWindow outer_scrolled_window {
+          hscrollbar-policy: never;
+          vscrollbar-policy: never;
+
+          Paned paned {
+            orientation: horizontal;
+            resize-start-child: true;
+            resize-end-child: true;
+            shrink-start-child: false;
+            shrink-end-child: false;
+            position: 500;
+            sensitive: true;
+
+            start-child: ScrolledWindow start_scrolled_window {
+              hscrollbar-policy: never;
+              vscrollbar-policy: automatic;
+
+              $MQTTyPublishParameters {}
+            };
+
+            end-child: ScrolledWindow {
+              width-request: 300;
+              height-request: 100;
+
+              $MQTTySourceView {
+                show-line-numbers: true;
+                monospace: true;
+              }
+            };
+          }
+        };
       }
 
       Adw.ViewStackPage {
         title: _("Messages");
+        name: "messages";
         icon-name: "chat-bubbles-empty-symbolic";
 
         child: Label {};
@@ -40,6 +83,7 @@ template $MQTTyPanelPage: $MQTTyBasePage {
 
       Adw.ViewStackPage {
         title: _("Edit");
+        name: "edit";
         icon-name: "document-edit-symbolic";
 
         child: $MQTTyEditConnListBox {
@@ -53,7 +97,7 @@ template $MQTTyPanelPage: $MQTTyBasePage {
   };
 
   bottom_widget: Adw.ViewSwitcherBar {
-    stack: stack;
+    stack: view_stack;
     reveal: bind template.reveal_bottom_bar;
   };
 }

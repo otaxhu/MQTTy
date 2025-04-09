@@ -1,0 +1,49 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTyPublishParameters: Adw.Bin {
+  Adw.Clamp {
+    ListBox {
+      width-request: 300;
+      selection-mode: none;
+      margin-top: 16;
+      margin-bottom: 16;
+      margin-start: 16;
+      margin-end: 16;
+
+      styles [
+        "boxed-list-separate",
+      ]
+
+      Adw.ActionRow {
+        title: _("MQTT Version");
+
+        [suffix]
+        Box {
+          CheckButton mqtt_3_button {
+            label: C_("mqtt version number", "v3.x");
+            group: mqtt_5_button;
+            action-name: "publish-parameters.mqtt-version";
+          }
+
+          CheckButton mqtt_5_button {
+            label: C_("mqtt version number", "v5");
+            action-name: "publish-parameters.mqtt-version";
+          }
+        }
+      }
+
+      Adw.SpinRow {
+        // Translators: DO NOT translate "QoS" abbreviation, if "QoS" abbreviation happens to not be the same as in translated version, inside parentheses put the not abbreviated translation, e.g. for spanish "QoS (Calidad de servicio)"
+        title: C_("mqtt qos abbreviation", "QoS");
+        title-lines: 1;
+
+        adjustment: Adjustment {
+          step-increment: 1;
+          lower: 0;
+          upper: 2;
+        };
+      }
+    }
+  }
+}

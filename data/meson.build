@@ -6,6 +6,7 @@ blueprint_files = [
   'ui/conn_card.blp',
   'ui/base_card.blp',
   'ui/edit_conn_list_box.blp',
+  'ui/publish_parameters.blp',
   'ui/pages/base_page.blp',
   'ui/pages/all_conn_page.blp',
   'ui/pages/add_conn_page.blp',

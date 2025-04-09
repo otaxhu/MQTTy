@@ -2,6 +2,7 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTyEditConnListBox: Adw.Bin {
+  // TODO: ScrolledWindow should be in an upper layer for more control.
   ScrolledWindow {
     Adw.Clamp {
       ListBox {

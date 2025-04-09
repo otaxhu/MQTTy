@@ -8,6 +8,7 @@
     <file compressed="true" preprocess="xml-stripblanks">ui/conn_card.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/base_card.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/edit_conn_list_box.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/publish_parameters.ui</file>
     <file compressed="true">style.css</file>
 
     <!-- Pages -->

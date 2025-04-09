@@ -19,6 +19,9 @@ mod imp {
         title_widget: RefCell<Option<gtk::Widget>>,
 
         #[property(get, set)]
+        top_end_widget: RefCell<Option<gtk::Widget>>,
+
+        #[property(get, set)]
         bottom_widget: RefCell<Option<gtk::Widget>>,
 
         #[property(construct_only, get)]

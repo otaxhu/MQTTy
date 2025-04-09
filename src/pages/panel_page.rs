@@ -24,6 +24,9 @@ mod imp {
 
         #[property(get, set)]
         conn_model: RefCell<MQTTySettingConnection>,
+
+        #[template_child]
+        view_stack: TemplateChild<adw::ViewStack>,
     }
 
     #[glib::object_subclass]
@@ -57,6 +60,18 @@ mod imp {
 
             obj.upcast_ref::<adw::NavigationPage>()
                 .set_title(&conn_model.topic());
+
+            self.view_stack
+                .connect_visible_child_name_notify(glib::clone!(
+                    #[weak]
+                    obj,
+                    move |view_stack| {
+                        obj.upcast_ref::<MQTTyBasePage>()
+                            .top_end_widget()
+                            .unwrap()
+                            .set_visible(view_stack.visible_child_name().unwrap() == "publish");
+                    }
+                ));
 
             obj.set_conn_model(conn_model);
         }

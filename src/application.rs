@@ -11,7 +11,10 @@ use crate::config;
 use crate::gsettings::MQTTySettingConnection;
 use crate::main_window::MQTTyWindow;
 use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanelPage};
-use crate::widgets::{MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox};
+use crate::widgets::{
+    MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyPublishParameters,
+    MQTTySourceView,
+};
 
 mod imp {
 
@@ -55,6 +58,8 @@ mod imp {
             MQTTyAddConnCard::static_type();
             MQTTyConnCard::static_type();
             MQTTyEditConnListBox::static_type();
+            MQTTySourceView::static_type();
+            MQTTyPublishParameters::static_type();
 
             // Pages
             MQTTyBasePage::static_type();
@@ -83,6 +88,9 @@ mod imp {
 
         fn startup(&self) {
             self.parent_startup();
+
+            sourceview::init();
+
             let app = self.obj();
 
             // Set icons for shell

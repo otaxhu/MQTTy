@@ -13,6 +13,11 @@ template $MQTTyBasePage: Adw.NavigationPage {
       // Binded reveal_top_bar to show-title so that descendant classes can show it through
       // Adw.Breakpoint's
       show-title: bind template.reveal_top_widget;
+
+      [end]
+      Adw.Bin {
+        child: bind template.top_end_widget;
+      }
     }
 
     Adw.Bin {
