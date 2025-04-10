@@ -48,9 +48,10 @@ template $MQTTyPublishParameters: Adw.Bin {
       }
 
       Adw.SpinRow {
-        // Translators: DO NOT translate "QoS" abbreviation, if "QoS" abbreviation happens to not be the same as in translated version, inside parentheses put the not abbreviated translation, e.g. for spanish "QoS (Calidad de servicio)"
         title: C_("mqtt qos abbreviation", "QoS");
         title-lines: 1;
+        subtitle: _("Quality of service");
+        subtitle-lines: 1;
 
         adjustment: Adjustment {
           step-increment: 1;
