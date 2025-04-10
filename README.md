@@ -1,78 +1,50 @@
-# GTK + Rust + Meson + Flatpak = <3
+# MQTTy
 
-A boilerplate template to get started with GTK, Rust, Meson, Flatpak made for GNOME. It can be adapted for other desktop environments like elementary.
+MQTTy it's a native MQTT GUI client written in Rust, that allows you to do what an MQTT client does, but in an easy and graphical way, with a focus on debugging and testing MQTT topics.
 
-<div align="center">
-![Main window](data/resources/screenshots/screenshot1.png "Main window")
-</div>
+## Features:
 
-## What does it contains?
+- ### Publish MQTT messages
 
-- A simple window with a headerbar
-- Bunch of useful files that you SHOULD ship with your application on Linux:
-  - Metainfo: describe your application for the different application stores out there;
-  - Desktop: the application launcher;
-  - Icons: This repo contains three icons, a normal, a nightly & monochromatic icon (symbolic) per the GNOME HIG, exported using [App Icon Preview](https://flathub.org/apps/details/org.gnome.design.AppIconPreview).
-- Flatpak Manifest for nightly builds
-- Dual installation support
-- Uses Meson for building the application
-- Bundles the UI files & the CSS using gresources
-- A pre-commit hook to run rustfmt on your code
-- Tests to validate your Metainfo, Schemas & Desktop files
-- Gsettings to store the window state, more settings could be added
-- Gitlab CI to produce flatpak nightlies
-- i18n support
+  Featuring an **embedded code editor**, you can use it to write any message you want to send to any MQTT topic you are connected to.
 
-## How to init a project ?
+- ### Subscribe to MQTT topics
 
-The template ships a simple python script to init a project easily. It asks you a few questions and replaces & renames all the necessary files.
+  You will receive system notifications when an incoming MQTT message arrives.
 
-The script requires having `git` installed on your system.
+- ### Application runs on the background when you close it
 
-You can run it with,
+  You can resume the application just by opening it again, it will keep notifying you of incoming MQTT messages when it's on the background.
 
-```shell
-python3 create-project.py
-```
+- ### VCS-friendly and private-first
 
-```shell
-➜ python3 create-project.py
-Welcome to GTK Rust Template
-Name: Contrast
-Project Name: contrast
-Application ID (e.g. org.domain.MyAwesomeApp, see: https://developer.gnome.org/ChooseApplicationID/): org.gnome.design.Contrast
-Author: Bilal Elmoussaoui
-Email: bil.elmoussaoui@gmail.com
-```
+  You own your data, period, MQTTy is responsible for saving your data locally into a VCS-friendly format, so that you can share it with your development team.
 
-A new directory named `contrast` containing the generated project
+## A little bit of history...
 
-## Building the project
+Imagine you are testing MQTT topics on any of the hundreds of Web MQTT clients, then you want to save all of the connection information for later use, oops! you can't, you need to create an account. You can't even save it locally, even if the browser allows to do it, at least that was my case.
 
-Make sure you have `flatpak` and `flatpak-builder` installed. Then run the commands below. Replace `<application_id>` with the value you entered during project creation. Please note that these commands are just for demonstration purposes. Normally this would be handled by your IDE, such as GNOME Builder or VS Code with the Flatpak extension.
+On very early stages of development I wanted to create just that, another Web MQTT client, that would allow to save all of the data locally for the user to save as whatever he wanted, and then resume development by uploading that same file to the app.
 
-```shell
-flatpak install --user org.gnome.Sdk//47 org.gnome.Platform//47  org.freedesktop.Sdk.Extension.rust-stable//24.08 org.freedesktop.Sdk.Extension.llvm18//24.08
-flatpak-builder --user flatpak_app build-aux/<application_id>.Devel.json
-```
+But then I wanted a very important feature, **the application should run on the background**, I couldn't do it with a Web app.
 
-## Running the project
+That's why I started this project, I wanted the users to own his data and some nice features that weren't available on Web based apps.
 
-Once the project is build, run the command below. Replace Replace `<application_id>` and `<project_name>` with the values you entered during project creation. Please note that these commands are just for demonstration purposes. Normally this would be handled by your IDE, such as GNOME Builder or VS Code with the Flatpak extension.
+## License
 
-```shell
-flatpak-builder --run flatpak_app build-aux/<application_id>.Devel.json <project_name>
-```
+MQTTy is published under the terms of the GNU General Public License v3.0 or later versions.
 
-## Community
+    Copyright (c) 2025 Oscar Pernia
 
-Join the GNOME and gtk-rs community!
+    MQTTy is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-- [Matrix chat](https://matrix.to/#/#rust:gnome.org): chat with other developers using gtk-rs
-- [Discourse forum](https://discourse.gnome.org/tag/rust): topics tagged with `rust` on the GNOME forum.
-- [GNOME circle](https://circle.gnome.org/): take inspiration from applications and libraries already extending the GNOME ecosystem.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-## Credits
-
-- [Podcasts](https://gitlab.gnome.org/World/podcasts)
-- [Shortwave](https://gitlab.gnome.org/World/Shortwave)
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
