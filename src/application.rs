@@ -23,11 +23,13 @@ use gtk::{gio, glib};
 
 use crate::client::MQTTyClient;
 use crate::config;
+use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::gsettings::MQTTySettingConnection;
 use crate::main_window::MQTTyWindow;
 use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanelPage};
 use crate::widgets::{
-    MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyPublishParameters,
+    MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyKeyValueRow,
+    MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab, MQTTyPublishView,
     MQTTySourceView,
 };
 
@@ -74,13 +76,24 @@ mod imp {
             MQTTyConnCard::static_type();
             MQTTyEditConnListBox::static_type();
             MQTTySourceView::static_type();
-            MQTTyPublishParameters::static_type();
+            MQTTyKeyValueRow::static_type();
+
+            MQTTyPublishView::static_type();
+            MQTTyPublishGeneralTab::static_type();
+            MQTTyPublishBodyTab::static_type();
+            MQTTyPublishUserPropsTab::static_type();
 
             // Pages
             MQTTyBasePage::static_type();
             MQTTyAllConnPage::static_type();
             MQTTyAddConnPage::static_type();
             MQTTyPanelPage::static_type();
+
+            // Enums
+            MQTTyDisplayMode::static_type();
+
+            // Interfaces
+            MQTTyDisplayModeIface::static_type();
         }
     }
 

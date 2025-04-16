@@ -41,71 +41,48 @@ template $MQTTyPanelPage: $MQTTyBasePage {
       setters {
         template.reveal_top_widget: false;
         template.reveal_bottom_bar: true;
-        paned.orientation: vertical;
-        outer_scrolled_window.vscrollbar-policy: automatic;
-        start_scrolled_window.vscrollbar-policy: never;
-        paned.position: 0;
+        publish_view.display_mode: mobile;
       }
     }
 
-    child: Adw.ViewStack view_stack {
-      Adw.ViewStackPage {
-        title: _("Publish");
-        name: "publish";
-        icon-name: "send-symbolic";
+    child: Box {
+      orientation: vertical;
 
-        child: ScrolledWindow outer_scrolled_window {
-          hscrollbar-policy: never;
-          vscrollbar-policy: never;
+      Separator {}
 
-          Paned paned {
-            orientation: horizontal;
-            resize-start-child: true;
-            resize-end-child: true;
-            shrink-start-child: false;
-            shrink-end-child: false;
-            position: 500;
-            sensitive: true;
+      Adw.ViewStack view_stack {
+        vexpand: true;
 
-            start-child: ScrolledWindow start_scrolled_window {
-              hscrollbar-policy: never;
-              vscrollbar-policy: automatic;
+        Adw.ViewStackPage {
+          title: _("Publish");
+          name: "publish";
+          icon-name: "send-symbolic";
 
-              $MQTTyPublishParameters {}
-            };
+          child: $MQTTyPublishView publish_view {
+            display_mode: desktop;
+          };
+        }
 
-            end-child: ScrolledWindow {
-              width-request: 300;
-              height-request: 100;
+        Adw.ViewStackPage {
+          title: _("Messages");
+          name: "messages";
+          icon-name: "chat-bubbles-empty-symbolic";
 
-              $MQTTySourceView {
-                show-line-numbers: true;
-                monospace: true;
-              }
-            };
-          }
-        };
-      }
+          child: Label {};
+        }
 
-      Adw.ViewStackPage {
-        title: _("Messages");
-        name: "messages";
-        icon-name: "chat-bubbles-empty-symbolic";
+        Adw.ViewStackPage {
+          title: _("Edit");
+          name: "edit";
+          icon-name: "document-edit-symbolic";
 
-        child: Label {};
-      }
-
-      Adw.ViewStackPage {
-        title: _("Edit");
-        name: "edit";
-        icon-name: "document-edit-symbolic";
-
-        child: $MQTTyEditConnListBox {
-          editing: true;
-          saving-conn => $on_save_conn() swapped;
-          deleting-conn => $on_delete_conn() swapped;
-          conn_model: bind template.conn_model;
-        };
+          child: $MQTTyEditConnListBox {
+            editing: true;
+            saving-conn => $on_save_conn() swapped;
+            deleting-conn => $on_delete_conn() swapped;
+            conn_model: bind template.conn_model;
+          };
+        }
       }
     };
   };

@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod prelude {
+    pub use crate::display_mode::MQTTyDisplayModeIfaceImpl;
     pub use crate::pages::base_page::MQTTyBasePageImpl;
     pub use crate::widgets::base_card::MQTTyBaseCardImpl;
 }

@@ -1,0 +1,59 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTyPublishGeneralTab: Adw.Bin {
+  Adw.Clamp {
+    Adw.PreferencesGroup {
+      margin-top: 16;
+      margin-bottom: 16;
+      margin-start: 16;
+      margin-end: 16;
+
+      Adw.ActionRow {
+        title: _("MQTT Version");
+
+        [suffix]
+        Box {
+          CheckButton mqtt_3_button {
+            label: C_("mqtt version number", "v3.x");
+            group: mqtt_5_button;
+            action-name: "publish-view.mqtt-version";
+          }
+
+          CheckButton mqtt_5_button {
+            label: C_("mqtt version number", "v5");
+            action-name: "publish-view.mqtt-version";
+          }
+        }
+      }
+
+      Adw.SpinRow qos_row {
+        title: C_("mqtt qos abbreviation", "QoS");
+        title-lines: 1;
+        subtitle: _("Quality of service");
+        subtitle-lines: 1;
+        visible: bind $or(mqtt_3_button.active, mqtt_5_button.active) as <bool>;
+
+        adjustment: Adjustment {
+          step-increment: 1;
+          lower: 0;
+          upper: 2;
+        };
+      }
+    }
+  }
+}

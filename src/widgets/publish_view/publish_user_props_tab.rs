@@ -13,40 +13,45 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::RefCell;
+use std::cell::Cell;
 
-use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
+
+use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
+use crate::subclass::prelude::*;
 
 mod imp {
 
     use super::*;
 
-    #[derive(Default, gtk::CompositeTemplate, glib::Properties)]
-    #[template(resource = "/io/github/otaxhu/MQTTy/ui/publish_parameters.ui")]
-    #[properties(wrapper_type = super::MQTTyPublishParameters)]
-    pub struct MQTTyPublishParameters {
-        #[property(get, set)]
-        mqtt_version: RefCell<String>,
+    #[derive(gtk::CompositeTemplate, glib::Properties)]
+    #[template(resource = "/io/github/otaxhu/MQTTy/ui/publish_view/publish_user_props_tab.ui")]
+    #[properties(wrapper_type = super::MQTTyPublishUserPropsTab)]
+    pub struct MQTTyPublishUserPropsTab {
+        #[property(get, set, override_interface = MQTTyDisplayModeIface)]
+        display_mode: Cell<MQTTyDisplayMode>,
+    }
 
-        #[template_child]
-        mqtt_3_button: TemplateChild<gtk::CheckButton>,
-
-        #[template_child]
-        mqtt_5_button: TemplateChild<gtk::CheckButton>,
+    impl Default for MQTTyPublishUserPropsTab {
+        fn default() -> Self {
+            Self {
+                display_mode: Cell::new(MQTTyDisplayMode::Desktop),
+            }
+        }
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for MQTTyPublishParameters {
-        const NAME: &'static str = "MQTTyPublishParameters";
+    impl ObjectSubclass for MQTTyPublishUserPropsTab {
+        const NAME: &'static str = "MQTTyPublishUserPropsTab";
 
-        type Type = super::MQTTyPublishParameters;
+        type Type = super::MQTTyPublishUserPropsTab;
 
         type ParentType = adw::Bin;
 
+        type Interfaces = (MQTTyDisplayModeIface,);
+
         fn class_init(klass: &mut Self::Class) {
-            klass.install_property_action("publish-parameters.mqtt-version", "mqtt_version");
             klass.bind_template();
         }
 
@@ -56,20 +61,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MQTTyPublishParameters {
-        fn constructed(&self) {
-            self.parent_constructed();
+    impl ObjectImpl for MQTTyPublishUserPropsTab {}
+    impl WidgetImpl for MQTTyPublishUserPropsTab {}
+    impl BinImpl for MQTTyPublishUserPropsTab {}
 
-            self.mqtt_3_button.set_action_target(Some("3"));
-            self.mqtt_5_button.set_action_target(Some("5"));
-        }
-    }
-    impl WidgetImpl for MQTTyPublishParameters {}
-    impl BinImpl for MQTTyPublishParameters {}
+    impl MQTTyDisplayModeIfaceImpl for MQTTyPublishUserPropsTab {}
 }
 
 glib::wrapper! {
-    pub struct MQTTyPublishParameters(ObjectSubclass<imp::MQTTyPublishParameters>)
+    pub struct MQTTyPublishUserPropsTab(ObjectSubclass<imp::MQTTyPublishUserPropsTab>)
         @extends gtk::Widget, adw::Bin,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }

@@ -1,0 +1,58 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTyPublishBodyTab: Adw.Bin {
+  Box {
+    width-request: 300;
+    height-request: 300;
+    orientation: bind $display_mode_to_orientation(template.display_mode) as <Orientation>;
+
+    Adw.Clamp {
+      Adw.PreferencesGroup {
+        margin-top: 16;
+        margin-bottom: 16;
+        margin-start: 16;
+        margin-end: 16;
+
+        Adw.ComboRow {
+          model: StringList {
+            strings [
+              _("(none)"),
+              "JSON",
+              "XML",
+              _("Raw"),
+            ]
+          };
+        }
+      }
+    }
+
+    Separator {}
+
+    ScrolledWindow {
+      vexpand: true;
+      hexpand: true;
+      hscrollbar-policy: automatic;
+      vscrollbar-policy: bind $display_mode_to_vscroll_policy(template.display_mode) as <PolicyType>;
+
+      $MQTTySourceView {
+        monospace: true;
+        show-line-numbers: true;
+      }
+    }
+  }
+}

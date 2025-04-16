@@ -8,8 +8,14 @@
     <file compressed="true" preprocess="xml-stripblanks">ui/conn_card.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/base_card.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/edit_conn_list_box.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">ui/publish_parameters.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/key_value_row.ui</file>
     <file compressed="true">style.css</file>
+
+    <!-- Publish view related -->
+    <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_body_tab.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_general_tab.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_user_props_tab.ui</file>
 
     <!-- Pages -->
     <file compressed="true" preprocess="xml-stripblanks">ui/pages/base_page.ui</file>

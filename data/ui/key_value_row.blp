@@ -1,0 +1,74 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+
+template $MQTTyKeyValueRow: ListBoxRow {
+  activatable: false;
+
+  Box {
+    margin-start: 6;
+    margin-end: 6;
+    spacing: 6;
+
+    CheckButton {
+      active: bind template.active bidirectional;
+      valign: center;
+    }
+
+    Box {
+      orientation: bind $display_mode_to_orientation(template.display_mode) as <Orientation>;
+      spacing: 1;
+
+      Entry {
+        styles [
+          "flat",
+        ]
+
+        height-request: 36;
+        hexpand: true;
+        vexpand: true;
+        placeholder-text: _("Key");
+        text: bind template.key bidirectional;
+        xalign: 0.03;
+      }
+
+      Separator {}
+
+      Entry {
+        styles [
+          "flat",
+        ]
+
+        height-request: 36;
+        hexpand: true;
+        vexpand: true;
+        placeholder-text: _("Value");
+        text: bind template.value bidirectional;
+        xalign: 0.03;
+      }
+    }
+
+    Button {
+      styles [
+        "destructive-action",
+        "circular",
+        "flat",
+      ]
+
+      icon-name: "edit-delete-symbolic";
+      valign: center;
+    }
+  }
+}

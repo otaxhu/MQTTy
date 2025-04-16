@@ -15,49 +15,26 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $MQTTyPublishParameters: Adw.Bin {
+template $MQTTyPublishUserPropsTab: Adw.Bin {
   Adw.Clamp {
     ListBox {
-      width-request: 300;
+      styles [
+        "boxed-list",
+      ]
+
       selection-mode: none;
       margin-top: 16;
       margin-bottom: 16;
       margin-start: 16;
       margin-end: 16;
+      valign: start;
 
-      styles [
-        "boxed-list-separate",
-      ]
-
-      Adw.ActionRow {
-        title: _("MQTT Version");
-
-        [suffix]
-        Box {
-          CheckButton mqtt_3_button {
-            label: C_("mqtt version number", "v3.x");
-            group: mqtt_5_button;
-            action-name: "publish-parameters.mqtt-version";
-          }
-
-          CheckButton mqtt_5_button {
-            label: C_("mqtt version number", "v5");
-            action-name: "publish-parameters.mqtt-version";
-          }
-        }
+      $MQTTyKeyValueRow {
+        display_mode: bind template.display_mode;
       }
 
-      Adw.SpinRow {
-        title: C_("mqtt qos abbreviation", "QoS");
-        title-lines: 1;
-        subtitle: _("Quality of service");
-        subtitle-lines: 1;
-
-        adjustment: Adjustment {
-          step-increment: 1;
-          lower: 0;
-          upper: 2;
-        };
+      $MQTTyKeyValueRow {
+        display_mode: bind template.display_mode;
       }
     }
   }
