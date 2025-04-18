@@ -27,8 +27,8 @@ mod imp {
     #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/main_window.ui")]
     pub struct MQTTyWindow {
-        #[template_child]
-        nav_view: TemplateChild<adw::NavigationView>,
+        // #[template_child]
+        // nav_view: TemplateChild<adw::NavigationView>,
     }
 
     #[glib::object_subclass]

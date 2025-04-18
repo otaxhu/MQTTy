@@ -13,6 +13,7 @@
 
     <!-- Publish view related -->
     <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_view_notebook.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_body_tab.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_general_tab.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/publish_view/publish_user_props_tab.ui</file>

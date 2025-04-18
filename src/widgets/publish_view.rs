@@ -16,15 +16,18 @@
 mod publish_body_tab;
 mod publish_general_tab;
 mod publish_user_props_tab;
+mod publish_view_notebook;
 
 pub use publish_body_tab::MQTTyPublishBodyTab;
 pub use publish_general_tab::MQTTyPublishGeneralTab;
 pub use publish_user_props_tab::MQTTyPublishUserPropsTab;
+pub use publish_view_notebook::MQTTyPublishViewNotebook;
 
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::glib;
 
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
@@ -38,18 +41,22 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/publish_view/publish_view.ui")]
     #[properties(wrapper_type = super::MQTTyPublishView)]
     pub struct MQTTyPublishView {
-        #[property(get, set)]
-        mqtt_version: RefCell<String>,
-
         #[property(get, set, override_interface = MQTTyDisplayModeIface)]
         display_mode: Cell<MQTTyDisplayMode>,
+
+        #[template_child]
+        tab_view: TemplateChild<adw::TabView>,
+
+        #[template_child]
+        stack: TemplateChild<gtk::Stack>,
     }
 
     impl Default for MQTTyPublishView {
         fn default() -> Self {
             Self {
                 display_mode: Cell::new(MQTTyDisplayMode::Desktop),
-                mqtt_version: Default::default(),
+                tab_view: Default::default(),
+                stack: Default::default(),
             }
         }
     }
@@ -65,9 +72,46 @@ mod imp {
         type Interfaces = (MQTTyDisplayModeIface,);
 
         fn class_init(klass: &mut Self::Class) {
-            klass.install_property_action("publish-view.mqtt-version", "mqtt_version");
+            klass.install_action("publish-view.new-tab", None, |this, _, _| {
+                let notebook = MQTTyPublishViewNotebook::new();
+                this.bind_property("display_mode", &notebook, "display_mode")
+                    .sync_create()
+                    .build();
+
+                let topic_expr = notebook
+                    .property_expression_weak("topic")
+                    .chain_closure::<String>(glib::closure!(
+                        move |_: Option<glib::Object>, topic: String| {
+                            if topic.is_empty() {
+                                gettext("(untitled)")
+                            } else {
+                                topic
+                            }
+                        }
+                    ));
+
+                let page = this.imp().tab_view.append(&notebook);
+
+                topic_expr.bind(&page, "title", glib::Object::NONE);
+
+                // We create a tooltip based on topic and url values, so that users knows how to
+                // differentiate between similar messages
+                gtk::ClosureExpression::new::<String>(
+                    [
+                        topic_expr.upcast(),
+                        notebook.property_expression_weak("url").upcast(),
+                    ],
+                    glib::closure!(move |_: Option<glib::Object>, topic: String, url: String| {
+                        if url.is_empty() {
+                            topic
+                        } else {
+                            [topic, url].join("\r\n")
+                        }
+                    }),
+                )
+                .bind(&page, "tooltip", glib::Object::NONE);
+            });
             klass.bind_template();
-            klass.bind_template_callbacks();
         }
 
         fn instance_init(obj: &glib::subclass::types::InitializingObject<Self>) {
@@ -76,18 +120,28 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MQTTyPublishView {}
+    impl ObjectImpl for MQTTyPublishView {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let stack = &self.stack;
+
+            self.tab_view.connect_n_pages_notify(glib::clone!(
+                #[weak]
+                stack,
+                move |tab_view| {
+                    stack.set_visible_child_name(if tab_view.n_pages() == 0 {
+                        "no-tabs"
+                    } else {
+                        "tabs"
+                    });
+                }
+            ));
+        }
+    }
     impl WidgetImpl for MQTTyPublishView {}
     impl BinImpl for MQTTyPublishView {}
     impl MQTTyDisplayModeIfaceImpl for MQTTyPublishView {}
-
-    #[gtk::template_callbacks]
-    impl MQTTyPublishView {
-        #[template_callback]
-        fn or(&self, a: bool, b: bool) -> bool {
-            a || b
-        }
-    }
 }
 
 glib::wrapper! {

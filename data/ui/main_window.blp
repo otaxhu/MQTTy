@@ -17,17 +17,15 @@ using Adw 1;
 
 template $MQTTyWindow: Adw.ApplicationWindow {
   hide-on-close: true;
-  // // TODO: idk if this is really necessary, just commented it out
-  // width-request: 450;
-  // height-request: 600;
-  // Adw.Breakpoint {
-  //   condition ("max-width: 450sp")
-  //   setters {
-  //     split_view.collapsed: true;
-  //     flowbox.min-children-per-line: 1;
-  //     flowbox.max-children-per-line: 1;
-  //   }
-  // }
+  height-request: 300;
+
+  Adw.Breakpoint {
+    condition ("max-width: 600sp")
+
+    setters {
+      publish_view.display_mode: mobile;
+    }
+  }
 
   [content]
   Adw.ToolbarView {
@@ -37,7 +35,6 @@ template $MQTTyWindow: Adw.ApplicationWindow {
     Adw.HeaderBar {
       title-widget: Adw.WindowTitle {
         title: "MQTTy";
-        subtitle: bind nav_view.visible-page as <Adw.NavigationPage>.title;
       };
 
       [end]
@@ -48,12 +45,34 @@ template $MQTTyWindow: Adw.ApplicationWindow {
     }
 
     // TODO: Use toasts to inform the user about actions made by him (like saving)
-    Adw.ToastOverlay toast_overlay {
-      Adw.NavigationView nav_view {
-        $MQTTyAllConnPage {
-          nav_view: nav_view;
+    content: Adw.ToastOverlay toast_overlay {
+      Adw.ViewStack view_stack {
+        Adw.ViewStackPage {
+          title: _("Publish");
+          name: "publish";
+          icon-name: "send-symbolic";
+
+          child: $MQTTyPublishView publish_view {
+            display_mode: desktop;
+          };
+        }
+
+        Adw.ViewStackPage {
+          title: _("Subscriptions");
+          name: "subscriptions";
+          icon-name: "chat-bubbles-empty-symbolic";
+
+          child: Label {
+            label: _("subs");
+          };
         }
       }
+    };
+
+    [bottom]
+    Adw.ViewSwitcherBar {
+      stack: view_stack;
+      reveal: true;
     }
   }
 }

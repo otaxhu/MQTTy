@@ -23,6 +23,7 @@ blueprint_files = [
   'ui/edit_conn_list_box.blp',
   'ui/key_value_row.blp',
   'ui/publish_view/publish_view.blp',
+  'ui/publish_view/publish_view_notebook.blp',
   'ui/publish_view/publish_general_tab.blp',
   'ui/publish_view/publish_body_tab.blp',
   'ui/publish_view/publish_user_props_tab.blp',

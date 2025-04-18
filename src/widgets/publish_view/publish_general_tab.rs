@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::cell::RefCell;
+
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
@@ -21,13 +23,27 @@ mod imp {
 
     use super::*;
 
-    #[derive(Default, gtk::CompositeTemplate)]
+    #[derive(Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/publish_view/publish_general_tab.ui")]
+    #[properties(wrapper_type = super::MQTTyPublishGeneralTab)]
     pub struct MQTTyPublishGeneralTab {
+        #[property(get, set)]
+        topic: RefCell<String>,
+
+        #[property(get, set)]
+        url: RefCell<String>,
+
         #[template_child]
         mqtt_3_button: TemplateChild<gtk::CheckButton>,
         #[template_child]
         mqtt_5_button: TemplateChild<gtk::CheckButton>,
+
+        #[template_child]
+        qos_0_button: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        qos_1_button: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        qos_2_button: TemplateChild<gtk::CheckButton>,
     }
 
     #[glib::object_subclass]
@@ -48,12 +64,17 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MQTTyPublishGeneralTab {
         fn constructed(&self) {
             self.parent_constructed();
 
             self.mqtt_3_button.set_action_target(Some("3"));
             self.mqtt_5_button.set_action_target(Some("5"));
+
+            self.qos_0_button.set_action_target(Some("0"));
+            self.qos_1_button.set_action_target(Some("1"));
+            self.qos_2_button.set_action_target(Some("2"));
         }
     }
     impl WidgetImpl for MQTTyPublishGeneralTab {}

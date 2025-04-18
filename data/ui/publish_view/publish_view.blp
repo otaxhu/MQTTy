@@ -16,44 +16,69 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTyPublishView: Adw.Bin {
-  Notebook {
-    show-border: false;
+  Box {
+    orientation: vertical;
 
-    NotebookPage {
-      tab-label: _("General");
+    Adw.TabBar {
+      styles [
+        "inline",
+      ]
 
-      child: ScrolledWindow {
-        hscrollbar-policy: never;
-        vscrollbar-policy: automatic;
+      autohide: false;
+      view: tab_view;
 
-        $MQTTyPublishGeneralTab {}
+      end-action-widget: Button {
+        styles [
+          "flat",
+        ]
+
+        action-name: "publish-view.new-tab";
+        icon-name: "tab-new-symbolic";
       };
     }
 
-    NotebookPage {
-      tab-label: _("User properties");
+    Stack stack {
+      vexpand: true;
 
-      child: ScrolledWindow {
-        hscrollbar-policy: never;
-        vscrollbar-policy: automatic;
+      StackPage {
+        name: "no-tabs";
 
-        $MQTTyPublishUserPropsTab {
-          display_mode: bind template.display_mode;
-        }
-      };
-    }
+        child: Adw.StatusPage {
+          title: _("Publish to topics");
+          description: _("It seems that you don't have any active tabs");
+          icon-name: "send-symbolic";
 
-    NotebookPage {
-      tab-label: _("Message body");
+          child: Adw.Clamp {
+            Button {
+              styles [
+                "suggested-action",
+                "pill",
+              ]
 
-      child: ScrolledWindow {
-        hscrollbar-policy: never;
-        vscrollbar-policy: automatic;
+              action-name: "publish-view.new-tab";
 
-        $MQTTyPublishBodyTab {
-          display_mode: bind template.display_mode;
-        }
-      };
+              child: Adw.ButtonContent {
+                label: _("New publish tab");
+                icon-name: "tab-new-symbolic";
+              };
+            }
+          };
+        };
+      }
+
+      StackPage {
+        name: "tabs";
+
+        child: Box {
+          orientation: vertical;
+
+          Separator {}
+
+          Adw.TabView tab_view {
+            vexpand: true;
+          }
+        };
+      }
     }
   }
 }
