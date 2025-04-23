@@ -94,8 +94,48 @@ mod imp {
     impl MQTTyPublishUserPropsTab {
         /// The type of the items are MQTTyKeyValueRow
         fn row_model(&self) -> gio::ListStore {
+            let obj = self.obj();
+
             self.row_model
-                .get_or_init(|| gio::ListStore::new::<MQTTyKeyValueRow>())
+                .get_or_init(glib::clone!(
+                    #[weak]
+                    obj,
+                    #[upgrade_or_panic]
+                    move || {
+                        let model = gio::ListStore::new::<MQTTyKeyValueRow>();
+
+                        model.connect_items_changed(move |model, _pos, _rem, _add| {
+                            for i in _pos.._pos + _add {
+                                // Mandatory initialization for every new row added
+                                let row = model
+                                    .item(i)
+                                    .unwrap()
+                                    .downcast::<MQTTyKeyValueRow>()
+                                    .unwrap();
+
+                                obj.bind_property("display_mode", &row, "display_mode")
+                                    .sync_create()
+                                    .build();
+
+                                row.connect_closure(
+                                    "deleted",
+                                    false,
+                                    glib::closure_local!(
+                                        #[weak]
+                                        model,
+                                        move |row: &MQTTyKeyValueRow| {
+                                            if let Some(idx) = model.find(row) {
+                                                model.remove(idx);
+                                            }
+                                        }
+                                    ),
+                                );
+                            }
+                        });
+
+                        model
+                    }
+                ))
                 .clone()
         }
 
@@ -105,11 +145,6 @@ mod imp {
         /// After the row gets changed, it becomes a normal row (it does not trigger additions)
         fn new_trigger_row(&self) -> MQTTyKeyValueRow {
             let row = MQTTyKeyValueRow::default();
-
-            let obj = self.obj();
-            obj.bind_property("display_mode", &row, "display_mode")
-                .sync_create()
-                .build();
 
             let row_model = self.row_model();
 
@@ -134,16 +169,6 @@ mod imp {
                     }
                 ),
             ));
-
-            row.connect_closure(
-                "deleted",
-                false,
-                glib::closure_local!(move |row: &MQTTyKeyValueRow| {
-                    if let Some(idx) = row_model.find(row) {
-                        row_model.remove(idx);
-                    }
-                }),
-            );
 
             row
         }
