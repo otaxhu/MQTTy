@@ -15,11 +15,14 @@
 
 use std::cell::Cell;
 
+use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
 
+use crate::content_type::MQTTyContentType;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::subclass::prelude::*;
+use crate::widgets::MQTTySourceView;
 
 mod imp {
 
@@ -31,12 +34,19 @@ mod imp {
     pub struct MQTTyPublishBodyTab {
         #[property(get, set, override_interface = MQTTyDisplayModeIface)]
         display_mode: Cell<MQTTyDisplayMode>,
+
+        #[template_child]
+        source_view: TemplateChild<MQTTySourceView>,
+        #[template_child]
+        content_type_combo: TemplateChild<adw::ComboRow>,
     }
 
     impl Default for MQTTyPublishBodyTab {
         fn default() -> Self {
             Self {
                 display_mode: Cell::new(MQTTyDisplayMode::Desktop),
+                source_view: Default::default(),
+                content_type_combo: Default::default(),
             }
         }
     }
@@ -62,7 +72,40 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MQTTyPublishBodyTab {}
+    impl ObjectImpl for MQTTyPublishBodyTab {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let list = gtk::StringList::new(&[]);
+
+            for i in MQTTyContentType::listed() {
+                list.append(&i.translated());
+            }
+
+            self.content_type_combo.set_model(Some(&list));
+
+            let selected_content_type = self
+                .content_type_combo
+                .property_expression_weak("selected")
+                .chain_closure::<MQTTyContentType>(glib::closure!(
+                    move |_: Option<glib::Object>, idx: u32| {
+                        MQTTyContentType::listed()[idx as usize]
+                    }
+                ));
+
+            let source_view_is_visible =
+                selected_content_type.chain_closure::<bool>(glib::closure!(
+                    move |_: Option<glib::Object>, content_type: MQTTyContentType| {
+                        match content_type {
+                            MQTTyContentType::None => false,
+                            _ => true,
+                        }
+                    }
+                ));
+
+            source_view_is_visible.bind(&*self.source_view, "visible", glib::Object::NONE);
+        }
+    }
     impl WidgetImpl for MQTTyPublishBodyTab {}
     impl BinImpl for MQTTyPublishBodyTab {}
 

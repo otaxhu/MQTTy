@@ -17,6 +17,7 @@ mod application;
 mod client;
 #[rustfmt::skip]
 mod config;
+mod content_type;
 mod display_mode;
 mod gsettings;
 mod main_window;

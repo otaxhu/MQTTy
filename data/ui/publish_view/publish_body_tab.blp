@@ -22,36 +22,32 @@ template $MQTTyPublishBodyTab: Adw.Bin {
     orientation: bind $display_mode_to_orientation(template.display_mode) as <Orientation>;
 
     Adw.Clamp {
+      hexpand: bind source_view.visible inverted;
+
       Adw.PreferencesGroup {
         margin-top: 16;
         margin-bottom: 16;
         margin-start: 16;
         margin-end: 16;
 
-        Adw.ComboRow {
+        Adw.ComboRow content_type_combo {
           title: _("Content type");
-
-          model: StringList {
-            strings [
-              _("(none)"),
-              "JSON",
-              "XML",
-              _("Raw"),
-            ]
-          };
         }
       }
     }
 
-    Separator {}
+    Separator {
+      visible: bind source_view.visible;
+    }
 
     ScrolledWindow {
       vexpand: true;
       hexpand: true;
       hscrollbar-policy: automatic;
       vscrollbar-policy: bind $display_mode_to_vscroll_policy(template.display_mode) as <PolicyType>;
+      visible: bind source_view.visible;
 
-      $MQTTySourceView {
+      $MQTTySourceView source_view {
         monospace: true;
         show-line-numbers: true;
       }
