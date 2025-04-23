@@ -13,14 +13,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::Cell;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::sync::LazyLock;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use gtk::glib;
+use gtk::glib::subclass::Signal;
+use gtk::{gio, glib};
 
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
+use crate::objects::MQTTyKeyValue;
 use crate::subclass::prelude::*;
 
 mod imp {
@@ -42,6 +44,9 @@ mod imp {
 
         #[property(get, set)]
         value: RefCell<String>,
+
+        #[property(get, set)]
+        user_changed: Cell<bool>,
     }
 
     impl Default for MQTTyKeyValueRow {
@@ -51,6 +56,7 @@ mod imp {
                 active: Default::default(),
                 key: Default::default(),
                 value: Default::default(),
+                user_changed: Default::default(),
             }
         }
     }
@@ -76,7 +82,49 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MQTTyKeyValueRow {}
+    impl ObjectImpl for MQTTyKeyValueRow {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let obj = self.obj();
+
+            let changed_callback = |obj: &Self::Type| {
+                obj.emit_by_name::<()>("changed", &[]);
+            };
+
+            obj.connect_key_notify(changed_callback);
+            obj.connect_value_notify(changed_callback);
+
+            let delete_action = gio::SimpleAction::new("delete", None);
+
+            obj.bind_property("user_changed", &delete_action, "enabled")
+                .sync_create()
+                .build();
+
+            delete_action.connect_activate(glib::clone!(
+                #[weak]
+                obj,
+                move |_, _| {
+                    obj.emit_by_name::<()>("deleted", &[]);
+                }
+            ));
+
+            let group = gio::SimpleActionGroup::new();
+            group.add_action(&delete_action);
+
+            obj.insert_action_group("row", Some(&group));
+        }
+
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![
+                    Signal::builder("deleted").build(),
+                    Signal::builder("changed").build(),
+                ]
+            });
+            &*SIGNALS
+        }
+    }
     impl WidgetImpl for MQTTyKeyValueRow {}
     impl ListBoxRowImpl for MQTTyKeyValueRow {}
     impl MQTTyDisplayModeIfaceImpl for MQTTyKeyValueRow {}
@@ -94,7 +142,39 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// Emits "deleted" when delete button is pressed, it doesn't delete anything, its meant
+    /// that upper layers connect to it and handle it
+    ///
+    /// Emits "changed" when key or value props are changed
     pub struct MQTTyKeyValueRow(ObjectSubclass<imp::MQTTyKeyValueRow>)
         @extends gtk::Widget, gtk::ListBoxRow,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
+}
+
+impl Default for MQTTyKeyValueRow {
+    fn default() -> Self {
+        Self::new(false, false, "", "")
+    }
+}
+
+impl MQTTyKeyValueRow {
+    pub fn new(active: bool, user_changed: bool, key: &str, value: &str) -> Self {
+        glib::Object::builder()
+            .property("active", active)
+            .property("user_changed", user_changed)
+            .property("key", key)
+            .property("value", value)
+            .build()
+    }
+}
+
+impl From<MQTTyKeyValue> for MQTTyKeyValueRow {
+    fn from(value: MQTTyKeyValue) -> Self {
+        Self::new(
+            value.active(),
+            Default::default(),
+            &value.key(),
+            &value.value(),
+        )
+    }
 }

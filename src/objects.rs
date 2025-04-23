@@ -12,22 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-using Gtk 4.0;
-using Adw 1;
 
-template $MQTTyPublishUserPropsTab: Adw.Bin {
-  Adw.Clamp {
-    ListBox list_box {
-      styles [
-        "boxed-list",
-      ]
+mod key_value;
 
-      selection-mode: none;
-      margin-top: 16;
-      margin-bottom: 16;
-      margin-start: 16;
-      margin-end: 16;
-      valign: start;
-    }
-  }
-}
+pub use key_value::MQTTyKeyValue;

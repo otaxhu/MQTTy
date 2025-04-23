@@ -25,6 +25,7 @@ template $MQTTyKeyValueRow: ListBoxRow {
     CheckButton {
       active: bind template.active bidirectional;
       valign: center;
+      sensitive: bind template.user_changed;
     }
 
     Box {
@@ -69,6 +70,8 @@ template $MQTTyKeyValueRow: ListBoxRow {
 
       icon-name: "edit-delete-symbolic";
       valign: center;
+      sensitive: bind template.user_changed;
+      action-name: "row.delete";
     }
   }
 }

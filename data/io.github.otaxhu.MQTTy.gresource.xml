@@ -27,5 +27,6 @@
     <!-- Icons -->
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/chat-bubbles-empty-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/agenda-symbolic.svg</file>
   </gresource>
 </gresources>

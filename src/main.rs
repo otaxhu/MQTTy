@@ -20,6 +20,7 @@ mod config;
 mod display_mode;
 mod gsettings;
 mod main_window;
+mod objects;
 mod pages;
 mod subclass;
 mod widgets;

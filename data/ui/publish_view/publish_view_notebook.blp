@@ -16,6 +16,9 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTyPublishViewNotebook: Adw.Bin {
+  mqtt_version: "3";
+  qos: "0";
+
   Notebook {
     show-border: false;
 
@@ -25,7 +28,6 @@ template $MQTTyPublishViewNotebook: Adw.Bin {
       child: ScrolledWindow {
         hscrollbar-policy: never;
         vscrollbar-policy: automatic;
-
         // General tab also populates mqtt_version and qos properties to this notebook, but we are
         // capturing both via installed property actions in this notebook
         $MQTTyPublishGeneralTab {
@@ -38,12 +40,34 @@ template $MQTTyPublishViewNotebook: Adw.Bin {
     NotebookPage {
       tab-label: _("User properties");
 
-      child: ScrolledWindow {
-        hscrollbar-policy: never;
-        vscrollbar-policy: automatic;
+      child: Stack {
+        visible-child-name: bind template.mqtt_version;
 
-        $MQTTyPublishUserPropsTab {
-          display_mode: bind template.display_mode;
+        StackPage {
+          name: "3";
+
+          child: Adw.StatusPage {
+            styles [
+              "compact",
+            ]
+
+            icon-name: "agenda-symbolic";
+            title: _("User properties unsupported");
+            description: _("MQTT v3.x doesn't support user properties, switch to v5 in order to use user properties");
+          };
+        }
+
+        StackPage {
+          name: "5";
+
+          child: ScrolledWindow {
+            hscrollbar-policy: never;
+            vscrollbar-policy: automatic;
+
+            $MQTTyPublishUserPropsTab {
+              display_mode: bind template.display_mode;
+            }
+          };
         }
       };
     }
