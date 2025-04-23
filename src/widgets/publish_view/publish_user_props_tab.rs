@@ -164,6 +164,7 @@ mod imp {
                         row.disconnect(signal_id.take().unwrap());
 
                         row.set_user_changed(true);
+                        row.set_active(true);
 
                         row_model.append(&this.new_trigger_row());
                     }
