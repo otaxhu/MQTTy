@@ -104,6 +104,21 @@ mod imp {
                 ));
 
             source_view_is_visible.bind(&*self.source_view, "visible", glib::Object::NONE);
+
+            let selected_language = selected_content_type
+                .chain_closure::<Option<sourceview::Language>>(glib::closure!(
+                    move |_: Option<glib::Object>, content_type: MQTTyContentType| {
+                        let language_manager = sourceview::LanguageManager::default();
+
+                        match content_type {
+                            MQTTyContentType::None | MQTTyContentType::Raw => None,
+                            MQTTyContentType::Json => language_manager.language("json"),
+                            MQTTyContentType::Xml => language_manager.language("xml"),
+                        }
+                    }
+                ));
+
+            selected_language.bind(&self.source_view.buffer(), "language", glib::Object::NONE);
         }
     }
     impl WidgetImpl for MQTTyPublishBodyTab {}
