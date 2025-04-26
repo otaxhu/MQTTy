@@ -13,12 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::{Cell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
 
+use crate::client::{MQTTyClient, MQTTyClientMessage, MQTTyClientQos, MQTTyClientVersion};
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::subclass::prelude::*;
 
@@ -30,9 +31,12 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/publish_view/publish_view_notebook.ui")]
     #[properties(wrapper_type = super::MQTTyPublishViewNotebook)]
     pub struct MQTTyPublishViewNotebook {
+        pub client: OnceCell<MQTTyClient>,
+
         #[property(get, set, override_interface = MQTTyDisplayModeIface)]
         display_mode: Cell<MQTTyDisplayMode>,
 
+        // TODO: Use enum values from client module
         #[property(get, set)]
         mqtt_version: RefCell<String>,
 
@@ -42,6 +46,7 @@ mod imp {
         #[property(get, set)]
         url: RefCell<String>,
 
+        // TODO: Use enum values from client module
         #[property(get, set)]
         qos: RefCell<String>,
     }
@@ -54,6 +59,7 @@ mod imp {
                 topic: Default::default(),
                 url: Default::default(),
                 qos: Default::default(),
+                client: Default::default(),
             }
         }
     }
@@ -95,5 +101,32 @@ glib::wrapper! {
 impl MQTTyPublishViewNotebook {
     pub fn new() -> Self {
         glib::Object::builder().build()
+    }
+
+    pub async fn send(&self) -> Result<(), String> {
+        let client = MQTTyClient::new(
+            &self.url(),
+            match self.mqtt_version().as_ref() {
+                "3" => MQTTyClientVersion::V3X,
+                "5" => MQTTyClientVersion::V5,
+                ver => panic!("Invalid MQTT version: {ver}"),
+            },
+            "", // TODO: username
+            "", // TODO: password
+        );
+
+        client.connect_client().await.unwrap();
+
+        let msg = MQTTyClientMessage::new();
+
+        msg.set_topic(self.topic());
+        msg.set_qos(match self.qos().as_ref() {
+            "0" => MQTTyClientQos::Qos0,
+            "1" => MQTTyClientQos::Qos1,
+            "2" => MQTTyClientQos::Qos2,
+            qos => panic!("Invalid Qos level: {qos}"),
+        });
+
+        client.publish(&msg).await
     }
 }

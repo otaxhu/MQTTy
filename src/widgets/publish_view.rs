@@ -49,6 +49,9 @@ mod imp {
 
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
+
+        #[template_child]
+        send_button: TemplateChild<gtk::Button>,
     }
 
     impl Default for MQTTyPublishView {
@@ -57,6 +60,7 @@ mod imp {
                 display_mode: Cell::new(MQTTyDisplayMode::Desktop),
                 tab_view: Default::default(),
                 stack: Default::default(),
+                send_button: Default::default(),
             }
         }
     }
@@ -111,6 +115,22 @@ mod imp {
                 )
                 .bind(&page, "tooltip", glib::Object::NONE);
             });
+
+            klass.install_action("publish-view.send", None, |this, _, _| {
+                let notebook = this
+                    .imp()
+                    .tab_view
+                    .selected_page()
+                    .unwrap()
+                    .child()
+                    .downcast::<MQTTyPublishViewNotebook>()
+                    .unwrap();
+
+                glib::spawn_future_local(async move {
+                    notebook.send().await.unwrap();
+                });
+            });
+
             klass.bind_template();
         }
 
@@ -125,16 +145,18 @@ mod imp {
             self.parent_constructed();
 
             let stack = &self.stack;
+            let send_button = &self.send_button;
 
             self.tab_view.connect_n_pages_notify(glib::clone!(
                 #[weak]
                 stack,
+                #[weak]
+                send_button,
                 move |tab_view| {
-                    stack.set_visible_child_name(if tab_view.n_pages() == 0 {
-                        "no-tabs"
-                    } else {
-                        "tabs"
-                    });
+                    let n_pages = tab_view.n_pages();
+                    stack.set_visible_child_name(if n_pages == 0 { "no-tabs" } else { "tabs" });
+
+                    send_button.set_visible(n_pages != 0);
                 }
             ));
         }

@@ -27,13 +27,28 @@ template $MQTTyPublishView: Adw.Bin {
       autohide: false;
       view: tab_view;
 
-      end-action-widget: Button {
-        styles [
-          "flat",
-        ]
+      end-action-widget: Box {
+        spacing: 6;
 
-        action-name: "publish-view.new-tab";
-        icon-name: "tab-new-symbolic";
+        Button {
+          styles [
+            "flat",
+          ]
+
+          action-name: "publish-view.new-tab";
+          icon-name: "tab-new-symbolic";
+        }
+
+        Button send_button {
+          styles [
+            "suggested-action",
+          ]
+
+          // Not visible by default
+          visible: false;
+          action-name: "publish-view.send";
+          label: _("Send");
+        }
       };
     }
 
