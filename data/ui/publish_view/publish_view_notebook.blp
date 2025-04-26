@@ -64,7 +64,7 @@ template $MQTTyPublishViewNotebook: Adw.Bin {
             hscrollbar-policy: never;
             vscrollbar-policy: automatic;
 
-            $MQTTyPublishUserPropsTab {
+            $MQTTyPublishUserPropsTab user_properties_tab {
               display_mode: bind template.display_mode;
             }
           };
@@ -81,6 +81,8 @@ template $MQTTyPublishViewNotebook: Adw.Bin {
 
         $MQTTyPublishBodyTab {
           display_mode: bind template.display_mode;
+          body: bind template.body bidirectional;
+          content_type: bind template.content_type bidirectional;
         }
       };
     }

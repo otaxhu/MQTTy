@@ -44,4 +44,13 @@ impl MQTTyContentType {
             MQTTyContentType::Raw => pgettext("body content type", "Raw"),
         }
     }
+
+    pub fn mime_type(&self) -> Option<&'static str> {
+        match self {
+            MQTTyContentType::None => None,
+            MQTTyContentType::Json => Some("application/json"),
+            MQTTyContentType::Xml => Some("text/xml"),
+            MQTTyContentType::Raw => Some("application/octet-stream"),
+        }
+    }
 }

@@ -217,3 +217,13 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
+
+impl MQTTyPublishUserPropsTab {
+    pub fn entries(&self) -> Vec<MQTTyKeyValue> {
+        self.imp().entries()
+    }
+
+    pub fn set_entries(&self, entries: &[MQTTyKeyValue]) {
+        self.imp().set_entries(entries);
+    }
+}

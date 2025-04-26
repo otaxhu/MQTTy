@@ -25,7 +25,7 @@ use adw::subclass::prelude::*;
 use gtk::glib;
 use gtk::glib::subclass::Signal;
 
-#[derive(Default, Clone, Copy, glib::Enum)]
+#[derive(Default, Clone, Copy, glib::Enum, PartialEq)]
 #[enum_type(name = "MQTTyClientVersion")]
 pub enum MQTTyClientVersion {
     #[default]

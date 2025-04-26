@@ -20,8 +20,10 @@ use adw::subclass::prelude::*;
 use gtk::glib;
 
 use crate::client::{MQTTyClient, MQTTyClientMessage, MQTTyClientQos, MQTTyClientVersion};
+use crate::content_type::MQTTyContentType;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::subclass::prelude::*;
+use crate::widgets::MQTTyPublishUserPropsTab;
 
 mod imp {
 
@@ -49,6 +51,15 @@ mod imp {
         // TODO: Use enum values from client module
         #[property(get, set)]
         qos: RefCell<String>,
+
+        #[property(get, set)]
+        body: RefCell<String>,
+
+        #[property(get, set, builder(Default::default()))]
+        content_type: Cell<MQTTyContentType>,
+
+        #[template_child]
+        pub user_properties_tab: TemplateChild<MQTTyPublishUserPropsTab>,
     }
 
     impl Default for MQTTyPublishViewNotebook {
@@ -60,6 +71,9 @@ mod imp {
                 url: Default::default(),
                 qos: Default::default(),
                 client: Default::default(),
+                body: Default::default(),
+                content_type: Default::default(),
+                user_properties_tab: Default::default(),
             }
         }
     }
@@ -104,13 +118,15 @@ impl MQTTyPublishViewNotebook {
     }
 
     pub async fn send(&self) -> Result<(), String> {
+        let mqtt_version = match self.mqtt_version().as_ref() {
+            "3" => MQTTyClientVersion::V3X,
+            "5" => MQTTyClientVersion::V5,
+            ver => panic!("Invalid MQTT version: {ver}"),
+        };
+
         let client = MQTTyClient::new(
             &self.url(),
-            match self.mqtt_version().as_ref() {
-                "3" => MQTTyClientVersion::V3X,
-                "5" => MQTTyClientVersion::V5,
-                ver => panic!("Invalid MQTT version: {ver}"),
-            },
+            mqtt_version,
             "", // TODO: username
             "", // TODO: password
         );
@@ -126,6 +142,22 @@ impl MQTTyPublishViewNotebook {
             "2" => MQTTyClientQos::Qos2,
             qos => panic!("Invalid Qos level: {qos}"),
         });
+        msg.set_body(self.body().as_ref());
+        msg.set_mqtt_version(mqtt_version);
+
+        // Specific to MQTT v5
+        if mqtt_version == MQTTyClientVersion::V5 {
+            msg.set_content_type(self.content_type().mime_type());
+            msg.set_user_properties(
+                self.imp()
+                    .user_properties_tab
+                    .entries()
+                    .iter()
+                    .map(|i| (i.key(), i.value()))
+                    .collect::<Vec<_>>()
+                    .as_ref(),
+            );
+        }
 
         client.publish(&msg).await
     }

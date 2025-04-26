@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -35,6 +35,12 @@ mod imp {
         #[property(get, set, override_interface = MQTTyDisplayModeIface)]
         display_mode: Cell<MQTTyDisplayMode>,
 
+        #[property(get, set)]
+        body: RefCell<String>,
+
+        #[property(get, set, builder(Default::default()))]
+        content_type: Cell<MQTTyContentType>,
+
         #[template_child]
         source_view: TemplateChild<MQTTySourceView>,
         #[template_child]
@@ -47,6 +53,8 @@ mod imp {
                 display_mode: Cell::new(MQTTyDisplayMode::Desktop),
                 source_view: Default::default(),
                 content_type_combo: Default::default(),
+                body: Default::default(),
+                content_type: Default::default(),
             }
         }
     }
@@ -76,6 +84,8 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
+            let obj = self.obj();
+
             let list = gtk::StringList::new(&[]);
 
             for i in MQTTyContentType::listed() {
@@ -92,6 +102,8 @@ mod imp {
                         MQTTyContentType::listed()[idx as usize]
                     }
                 ));
+
+            selected_content_type.bind(&*obj, "content_type", glib::Object::NONE);
 
             let source_view_is_visible =
                 selected_content_type.chain_closure::<bool>(glib::closure!(
