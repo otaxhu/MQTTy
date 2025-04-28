@@ -153,6 +153,7 @@ mod imp {
                     paho::ConnectOptionsBuilder::with_mqtt_version(obj.mqtt_version())
                         .user_name(obj.username())
                         .password(obj.password())
+                        .ssl_options(Default::default())
                         .finalize(),
                 ))
                 .await
