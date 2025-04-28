@@ -1,0 +1,50 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTyPublishAuthTab: Adw.Bin {
+  Adw.Clamp {
+    Adw.PreferencesGroup {
+      margin-top: 16;
+      margin-bottom: 16;
+      margin-start: 16;
+      margin-end: 16;
+
+      Adw.EntryRow {
+        title: _("Username");
+        text: bind template.username bidirectional;
+      }
+
+      // FIXME: Uncomment this when this issue gets fixed:
+      // https://github.com/eclipse-paho/paho.mqtt.rust/issues/245
+      //
+      // // This is done in order to comply with MQTT standard, which states that passwords
+      // // are treated as binary strings, with no specific encoding.
+      // //
+      // // If this is disabled, the string is passed as it is to the server (UTF-8 encoded)
+      // Adw.SwitchRow {
+      //   title: _("Base64 encoded password");
+      //   tooltip-text: _("If enabled, the password must be Base64-standard encoded");
+      //   active: bind template.is_binary_password;
+      // }
+      //
+      Adw.PasswordEntryRow {
+        title: _("Password");
+        text: bind template.password bidirectional;
+      }
+    }
+  }
+}

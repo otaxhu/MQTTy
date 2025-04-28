@@ -58,6 +58,12 @@ mod imp {
         #[property(get, set, builder(Default::default()))]
         content_type: Cell<MQTTyContentType>,
 
+        #[property(get, set)]
+        username: RefCell<String>,
+
+        #[property(get, set)]
+        password: RefCell<String>,
+
         #[template_child]
         pub user_properties_tab: TemplateChild<MQTTyPublishUserPropsTab>,
     }
@@ -74,6 +80,8 @@ mod imp {
                 body: Default::default(),
                 content_type: Default::default(),
                 user_properties_tab: Default::default(),
+                username: Default::default(),
+                password: Default::default(),
             }
         }
     }
@@ -127,8 +135,8 @@ impl MQTTyPublishViewNotebook {
         let client = MQTTyClient::new(
             &self.url(),
             mqtt_version,
-            "", // TODO: username
-            "", // TODO: password
+            &self.username(),
+            &self.password(),
         );
 
         client.connect_client().await.unwrap();

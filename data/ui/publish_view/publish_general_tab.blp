@@ -25,6 +25,7 @@ template $MQTTyPublishGeneralTab: Adw.Bin {
 
       Adw.ActionRow {
         title: _("MQTT Version");
+        title-lines: 1;
 
         [suffix]
         Box {
@@ -48,7 +49,6 @@ template $MQTTyPublishGeneralTab: Adw.Bin {
         title-lines: 1;
         subtitle: _("Quality of service");
         subtitle-lines: 1;
-        visible: bind $or(mqtt_3_button.active, mqtt_5_button.active) as <bool>;
 
         [suffix]
         Box {
@@ -73,13 +73,11 @@ template $MQTTyPublishGeneralTab: Adw.Bin {
 
       Adw.EntryRow {
         title: _("URL");
-        visible: bind $or(mqtt_3_button.active, mqtt_5_button.active) as <bool>;
         text: bind template.url bidirectional;
       }
 
       Adw.EntryRow {
         title: _("Topic");
-        visible: bind $or(mqtt_3_button.active, mqtt_5_button.active) as <bool>;
         text: bind template.topic bidirectional;
       }
     }

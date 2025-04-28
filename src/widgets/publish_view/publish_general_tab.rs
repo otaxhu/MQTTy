@@ -33,6 +33,12 @@ mod imp {
         #[property(get, set)]
         url: RefCell<String>,
 
+        #[property(get, set)]
+        username: RefCell<String>,
+
+        #[property(get, set)]
+        password: RefCell<String>,
+
         #[template_child]
         mqtt_3_button: TemplateChild<gtk::CheckButton>,
         #[template_child]

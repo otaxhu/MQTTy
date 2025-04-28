@@ -29,8 +29,8 @@ use crate::main_window::MQTTyWindow;
 use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanelPage};
 use crate::widgets::{
     MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyKeyValueRow,
-    MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab, MQTTyPublishView,
-    MQTTySourceView,
+    MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab,
+    MQTTyPublishView, MQTTySourceView,
 };
 
 mod imp {
@@ -82,6 +82,7 @@ mod imp {
             MQTTyPublishGeneralTab::static_type();
             MQTTyPublishBodyTab::static_type();
             MQTTyPublishUserPropsTab::static_type();
+            MQTTyPublishAuthTab::static_type();
 
             // Pages
             MQTTyBasePage::static_type();

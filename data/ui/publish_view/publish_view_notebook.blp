@@ -38,6 +38,20 @@ template $MQTTyPublishViewNotebook: Adw.Bin {
     }
 
     NotebookPage {
+      tab-label: _("Authentication");
+
+      child: ScrolledWindow {
+        hscrollbar-policy: never;
+        vscrollbar-policy: automatic;
+
+        $MQTTyPublishAuthTab {
+          username: bind template.username bidirectional;
+          password: bind template.password bidirectional;
+        }
+      };
+    }
+
+    NotebookPage {
       tab-label: _("User properties");
 
       child: Stack {

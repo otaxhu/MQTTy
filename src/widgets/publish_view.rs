@@ -13,11 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+mod publish_auth_tab;
 mod publish_body_tab;
 mod publish_general_tab;
 mod publish_user_props_tab;
 mod publish_view_notebook;
 
+pub use publish_auth_tab::MQTTyPublishAuthTab;
 pub use publish_body_tab::MQTTyPublishBodyTab;
 pub use publish_general_tab::MQTTyPublishGeneralTab;
 pub use publish_user_props_tab::MQTTyPublishUserPropsTab;

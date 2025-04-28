@@ -28,6 +28,7 @@ pub use conn_card::MQTTyConnCard;
 pub use edit_conn_list_box::MQTTyEditConnListBox;
 pub use key_value_row::MQTTyKeyValueRow;
 pub use publish_view::{
-    MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab, MQTTyPublishView,
+    MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab,
+    MQTTyPublishView,
 };
 pub use source_view::MQTTySourceView;
