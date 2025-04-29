@@ -17,7 +17,7 @@ using Adw 1;
 
 template $MQTTyWindow: Adw.ApplicationWindow {
   hide-on-close: true;
-  height-request: 300;
+  height-request: 400;
 
   Adw.Breakpoint {
     condition ("max-width: 600sp")
@@ -61,9 +61,11 @@ template $MQTTyWindow: Adw.ApplicationWindow {
           title: _("Subscriptions");
           name: "subscriptions";
           icon-name: "chat-bubbles-empty-symbolic";
-
-          child: Label {
-            label: _("subs");
+          // TODO: Implement Subscriptions page
+          child: Adw.StatusPage {
+            title: _("Subscriptions are unimplemented!");
+            description: _("Sorry, but the subscriptions are currently unimplemented, stay tuned for new releases.");
+            icon-name: "build-alt-symbolic";
           };
         }
       }
