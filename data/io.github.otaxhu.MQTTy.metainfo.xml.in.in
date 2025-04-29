@@ -16,6 +16,10 @@
     </ul>
   </description>
   <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/otaxhu/MQTTy/refs/heads/main/data/screenshots/publish_view.png</image>
+      <caption>Publish view</caption>
+    </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/otaxhu/MQTTy</url>
   <url type="bugtracker">https://github.com/otaxhu/MQTTy/issues</url>
