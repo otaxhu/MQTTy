@@ -2,7 +2,7 @@
 <!-- Oscar Pernia 2025 <oscarperniamoreno@gmail.com> -->
 <component type="desktop-application">
   <id>@app-id@</id>
-  <metadata_license>CC0</metadata_license>
+  <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name translate="no">MQTTy</name>
   <summary>Connect to an MQTT broker and Pub/Sub to topics</summary>
@@ -26,8 +26,6 @@
   <url type="vcs-browser">https://github.com/otaxhu/MQTTy/MQTTy</url>
   <url type="translate">https://github.com/otaxhu/MQTTy/tree/main/po</url>
   <content_rating type="oars-1.1" />
-  <releases>
-  </releases>
   <developer_name translate="no">Oscar Pernia</developer_name>
   <developer id="io.github.otaxhu">
     <name translate="no">Oscar Pernia</name>
@@ -45,4 +43,13 @@
   <update_contact>oscarperniamoreno@gmail.com</update_contact>
   <translation type="gettext">@gettext-package@</translation>
   <launchable type="desktop-id">@app-id@.desktop</launchable>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+
+  <!-- Put latest release as the first one -->
+  <releases>
+  </releases>
 </component>
