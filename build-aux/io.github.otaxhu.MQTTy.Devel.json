@@ -29,6 +29,32 @@
     },
     "modules": [
         {
+            "name": "blueprint-compiler",
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/blueprint-compiler",
+                    "tag": "v0.16.0"
+                }
+            ]
+        },
+        {
+            "name": "sass",
+            "buildsystem": "simple",
+            "build-commands": [
+                "cp -r * ${FLATPAK_DEST}/bin/",
+                "chmod +x ${FLATPAK_DEST}/bin/sass"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://github.com/sass/dart-sass/releases/download/1.86.0/dart-sass-1.86.0-linux-x64.tar.gz",
+                    "sha256": "da73e0c544081ed23ce4ec66b1238cbc9a5b80ddfcbde2be41025f3cef40aae6"
+                }
+            ]
+        },
+        {
             "name": "MQTTy",
             "buildsystem": "meson",
             "run-tests": true,
