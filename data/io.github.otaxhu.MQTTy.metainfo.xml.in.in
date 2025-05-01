@@ -5,7 +5,7 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name translate="no">MQTTy</name>
-  <summary>Provides a GUI for connecting to an MQTT broker and consume topics</summary>
+  <summary>GUI for consuming MQTT topics</summary>
   <description>
     <p>A native GUI MQTT client development tool, with the purpose of debugging and testing IoT
       applications that makes use of the MQTT protocol.
@@ -25,22 +25,15 @@
   </screenshots>
   <url type="homepage">https://github.com/otaxhu/MQTTy</url>
   <url type="bugtracker">https://github.com/otaxhu/MQTTy/issues</url>
-  <url type="vcs-browser">https://github.com/otaxhu/MQTTy/MQTTy</url>
+  <url type="vcs-browser">https://github.com/otaxhu/MQTTy</url>
   <url type="translate">https://github.com/otaxhu/MQTTy/tree/main/po</url>
   <content_rating type="oars-1.1" />
-  <developer_name translate="no">Oscar Pernia</developer_name>
   <developer id="io.github.otaxhu">
     <name translate="no">Oscar Pernia</name>
   </developer>
-  <!-- 
-    TODO:
-
-    Branding colors:
-    https://docs.flathub.org/docs/for-app-authors/metainfo-guidelines/#brand-color
-  -->
   <branding>
-    <color type="primary" scheme_preference="light">#ff00ff</color>
-    <color type="primary" scheme_preference="dark">#993d3d</color>
+    <color type="primary" scheme_preference="light">#d0d0d0</color>
+    <color type="primary" scheme_preference="dark">#800080</color>
   </branding>
   <update_contact>oscarperniamoreno@gmail.com</update_contact>
   <translation type="gettext">@gettext-package@</translation>
@@ -50,9 +43,24 @@
     <control>keyboard</control>
     <control>touch</control>
   </supports>
+  <requires>
+    <!-- Available for mobile devices as well as desktop -->
+    <display_length compare="ge">360</display_length>
+  </requires>
 
   <!-- Put latest release as the first one -->
   <releases>
+    <release date="2025-05-01" version="0.1.1">
+      <description translate="no" translatable="no">
+        <p>Quick fix metainfo.</p>
+        <p>Fixes:</p>
+        <ul>
+          <li>Metainfo broken links</li>
+          <li>Better branding color</li>
+          <li>Summary shortened</li>
+        </ul>
+      </description>
+    </release>
     <release date="2025-04-30" version="0.1.0">
       <description translate="no" translatable="no">
         <p>First release. It's not feature-full, but at least it has one of the main features that
