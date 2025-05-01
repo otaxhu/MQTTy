@@ -53,5 +53,19 @@
 
   <!-- Put latest release as the first one -->
   <releases>
+    <release date="2025-04-30" version="0.1.0">
+      <description translate="no" translatable="no">
+        <p>First release. It's not feature-full, but at least it has one of the main features that
+          I was looking for, which is to connect to MQTT brokers and publish to topics.
+        </p>
+        <p>Added:</p>
+        <ul>
+          <li>Functional MQTT publisher client, with support for different content types</li>
+          <li>Support for multiple MQTT connections separeted into different tabs</li>
+          <li>MQTT v3.x and v5 support</li>
+          <li>Integrated code editor</li>
+        </ul>
+      </description>
+    </release>
   </releases>
 </component>
