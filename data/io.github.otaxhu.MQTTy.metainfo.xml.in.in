@@ -5,14 +5,16 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name translate="no">MQTTy</name>
-  <summary>Connect to an MQTT broker and Pub/Sub to topics</summary>
+  <summary>Provides a GUI for connecting to an MQTT broker and consume topics</summary>
   <description>
-    <p>A native GUI MQTT Client, useful for debugging MQTT topics, as well as a system notification
-      producer/consumer. With support for sending plaintext/JSON messages and syntax highlighting
-      support.</p>
+    <p>A native GUI MQTT client development tool, with the purpose of debugging and testing IoT
+      applications that makes use of the MQTT protocol.
+    </p>
     <p>Features:</p>
     <ul>
-      <li>Pub/Sub to topics seamlessly</li>
+      <li>Publish to topics (In futures versions, it will also allow you to subscribe).</li>
+      <li>Integrated code editor, with syntax highlighting for JSON and XML.</li>
+      <li>Allows you to have multiple MQTT connections separated in different tabs</li>
     </ul>
   </description>
   <screenshots>
