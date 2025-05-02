@@ -16,9 +16,6 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTyPublishViewNotebook: Adw.Bin {
-  mqtt_version: "3";
-  qos: "0";
-
   Notebook {
     show-border: false;
     scrollable: true;
@@ -55,9 +52,7 @@ template $MQTTyPublishViewNotebook: Adw.Bin {
     NotebookPage {
       tab-label: _("User properties");
 
-      child: Stack {
-        visible-child-name: bind template.mqtt_version;
-
+      child: Stack user_properties_stack {
         StackPage {
           name: "3";
 
