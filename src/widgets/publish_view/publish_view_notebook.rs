@@ -150,7 +150,9 @@ impl MQTTyPublishViewNotebook {
             "2" => MQTTyClientQos::Qos2,
             qos => panic!("Invalid Qos level: {qos}"),
         });
-        msg.set_body(self.body().as_ref());
+        if self.content_type() != MQTTyContentType::None {
+            msg.set_body(self.body().as_ref());
+        }
         msg.set_mqtt_version(mqtt_version);
 
         // Specific to MQTT v5
