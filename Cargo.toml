@@ -10,6 +10,7 @@ lto = true
 adw = { version = "0.7.1", package = "libadwaita", features = ["v1_5"]}
 async-channel = "2.3.1"
 derive_builder = "0.20.2"
+formatx = "0.2.3"
 futures = "0.3.31"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 gtk = { version = "0.9", package = "gtk4", features = ["gnome_46"] }
