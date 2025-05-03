@@ -29,10 +29,13 @@ use std::cell::Cell;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
+use formatx::formatx;
 use gettextrs::gettext;
 use gtk::glib;
 
+use crate::application::MQTTyApplication;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
+use crate::main_window::MQTTyWindow;
 use crate::subclass::prelude::*;
 
 mod imp {
@@ -128,8 +131,37 @@ mod imp {
                     .downcast::<MQTTyPublishViewNotebook>()
                     .unwrap();
 
+                let app = MQTTyApplication::get_singleton();
+
+                let window = app
+                    .active_window()
+                    .unwrap()
+                    .downcast::<MQTTyWindow>()
+                    .unwrap();
+
+                let publishing_toast = adw::Toast::new(gettext("Publishing message...").as_ref());
+
+                publishing_toast.set_timeout(2);
+
+                window.toast(&publishing_toast);
+
                 glib::spawn_future_local(async move {
-                    notebook.send().await.unwrap();
+                    let ret = notebook.send().await;
+
+                    publishing_toast.dismiss();
+
+                    let msg = match ret {
+                        Ok(_) => {
+                            formatx!(gettext("Message published to topic {}"), notebook.topic())
+                                .unwrap()
+                        }
+
+                        Err(e) => formatx!(gettext("Error while publishing: {}"), e).unwrap(),
+                    };
+
+                    let t = adw::Toast::new(&msg);
+                    t.set_timeout(2);
+                    window.toast(&t);
                 });
             });
 

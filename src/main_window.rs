@@ -27,8 +27,8 @@ mod imp {
     #[derive(Debug, Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/main_window.ui")]
     pub struct MQTTyWindow {
-        // #[template_child]
-        // nav_view: TemplateChild<adw::NavigationView>,
+        #[template_child]
+        pub toast_overlay: TemplateChild<adw::ToastOverlay>,
     }
 
     #[glib::object_subclass]
@@ -117,5 +117,9 @@ impl MQTTyWindow {
         if is_maximized {
             self.maximize();
         }
+    }
+
+    pub fn toast(&self, toast: &adw::Toast) {
+        self.imp().toast_overlay.add_toast(toast.clone());
     }
 }
