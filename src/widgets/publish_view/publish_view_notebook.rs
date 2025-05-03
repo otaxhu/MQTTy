@@ -209,7 +209,7 @@ impl MQTTyPublishViewNotebook {
             &self.password(),
         );
 
-        client.connect_client().await.unwrap();
+        client.connect_client().await?;
 
         let msg = MQTTyClientMessage::new();
 
