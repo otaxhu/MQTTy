@@ -50,6 +50,23 @@
 
   <!-- Put latest release as the first one -->
   <releases>
+    <release date="2025-05-04" version="0.1.2">
+      <description translate="no" translatable="no">
+        <p>UX improvements:</p>
+        <ul>
+          <li>When navigating the UI with the keyboard, the rows won't be focused unnecessarily,
+            instead the focus will go directly to the inner fields.
+          </li>
+        </ul>
+        <p>Added:</p>
+        <ul>
+          <li>Now toasts notifications will appear on the lower part of the window, indicating
+            published messages either succeded or failed, a hint message will also appear
+            indicating what failed.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release date="2025-05-01" version="0.1.1">
       <description translate="no" translatable="no">
         <p>Quick fix metainfo.</p>
