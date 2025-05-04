@@ -24,6 +24,7 @@ mod main_window;
 mod objects;
 mod pages;
 mod subclass;
+mod toast;
 mod widgets;
 
 use gettextrs::{gettext, LocaleCategory};

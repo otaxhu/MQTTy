@@ -40,6 +40,8 @@ use crate::subclass::prelude::*;
 
 mod imp {
 
+    use crate::toast::MQTTyToastBuilder;
+
     use super::*;
 
     #[derive(gtk::CompositeTemplate, glib::Properties)]
@@ -139,9 +141,10 @@ mod imp {
                     .downcast::<MQTTyWindow>()
                     .unwrap();
 
-                let publishing_toast = adw::Toast::new(gettext("Publishing message...").as_ref());
-
-                publishing_toast.set_timeout(2);
+                let publishing_toast = MQTTyToastBuilder::new()
+                    .timeout(2)
+                    .title(gettext("Publishing message..."))
+                    .build();
 
                 window.toast(&publishing_toast);
 
@@ -150,18 +153,38 @@ mod imp {
 
                     publishing_toast.dismiss();
 
-                    let msg = match ret {
-                        Ok(_) => {
-                            formatx!(gettext("Message published to topic {}"), notebook.topic())
-                                .unwrap()
-                        }
+                    let toast = match ret {
+                        Ok(_) => MQTTyToastBuilder::new()
+                            .title(
+                                formatx!(
+                                    gettext("Message published to topic {}"),
+                                    notebook.topic()
+                                )
+                                .unwrap(),
+                            )
+                            .icon(
+                                gtk::Image::builder()
+                                    .icon_name("object-select-symbolic")
+                                    .css_classes(["success"])
+                                    .build()
+                                    .as_ref(),
+                            )
+                            .timeout(2)
+                            .build(),
 
-                        Err(e) => formatx!(gettext("Error while publishing: {}"), e).unwrap(),
+                        Err(e) => MQTTyToastBuilder::new()
+                            .title(formatx!(gettext("Error while publishing: {}"), e).unwrap())
+                            .icon(
+                                gtk::Image::builder()
+                                    .icon_name("network-error-symbolic")
+                                    .build()
+                                    .as_ref(),
+                            )
+                            .timeout(2)
+                            .build(),
                     };
 
-                    let t = adw::Toast::new(&msg);
-                    t.set_timeout(2);
-                    window.toast(&t);
+                    window.toast(&toast);
                 });
             });
 
