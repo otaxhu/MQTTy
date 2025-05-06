@@ -47,21 +47,37 @@ endif
 
 cargo_env = [ 'CARGO_HOME=' + meson.project_build_root() / 'cargo-home' ]
 
-custom_target(
+cargo_build = custom_target(
   'cargo-build',
   build_by_default: true,
   build_always_stale: true,
-  output: meson.project_name(),
+  output: rust_target,
+  console: true,
+  env: cargo_env,
+  depends: resources,
+  command: [
+    cargo, 'build',
+    cargo_options,
+  ]
+)
+
+mqtty_bin = meson.project_name()
+if host_machine.system() == 'windows'
+  mqtty_bin = '@0@.exe'.format(mqtty_bin)
+endif
+
+custom_target(
+  'copy-executable',
+  build_by_default: true,
+  build_always_stale: true,
+  depends: cargo_build,
+  output: mqtty_bin,
   console: true,
   install: true,
   install_dir: bindir,
-  depends: resources,
   command: [
-    'env',
-    cargo_env,
-    cargo, 'build',
-    cargo_options,
-    '&&',
-    'cp', 'src' / rust_target / meson.project_name(), '@OUTPUT@',
+    'cp',
+    'src' / rust_target / mqtty_bin,
+    '@OUTPUT@',
   ]
 )
