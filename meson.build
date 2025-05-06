@@ -31,6 +31,7 @@ dependency('gio-2.0', version: '>= 2.66')
 dependency('gtk4', version: '>= 4.0.0')
 dependency('openssl', version: '>= 1.0')
 dependency('gtksourceview-5', version: '>= 5.0')
+dependency('libadwaita-1', version: '>= 1.6')
 
 find_program('glib-compile-resources')
 glib_compile_schemas = find_program('glib-compile-schemas')
