@@ -46,6 +46,14 @@ blueprints = custom_target('blueprints',
 )
 
 # Sass compilation
+
+# Sass program, with some fallback values, this are defined in subprojects/sass-*.wrap
+if host_machine.system() == 'windows'
+  sass = find_program('sass', 'sass-win32-x86_64')
+else
+  sass = find_program('sass', 'sass-linux-x86_64')
+endif
+
 sass_files = [
   'styles/style.scss',
   'styles/indicator.scss',
@@ -54,7 +62,7 @@ sass_files = [
 css = custom_target('css',
   input: files(sass_files),
   output: 'style.css',
-  command: [find_program('sass'), '--no-source-map', '--style=compressed',  '@INPUT0@', '@OUTPUT@']
+  command: [sass, '--no-source-map', '--style=compressed',  '@INPUT0@', '@OUTPUT@']
 )
 
 # Resources

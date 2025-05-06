@@ -7,4 +7,4 @@ source_hash = da73e0c544081ed23ce4ec66b1238cbc9a5b80ddfcbde2be41025f3cef40aae6
 patch_directory = dart-sass
 
 [provide]
-program_names = sass
+program_names = sass-linux-x86_64
