@@ -2,7 +2,7 @@
 directory = dart-sass
 # Bump version as needed
 source_url = https://github.com/sass/dart-sass/releases/download/1.86.0/dart-sass-1.86.0-windows-x64.zip
-source_filename = dart-sass-1.86.0-windows-x64.tar.gz
+source_filename = dart-sass-1.86.0-windows-x64.zip
 source_hash = fc3104ebe484c2b442bd376328af8046fa04d22ca3e835f1472dc14a2e30c605
 patch_directory = dart-sass
 
