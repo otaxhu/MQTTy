@@ -40,6 +40,7 @@ pacman -Sy --noconfirm --needed \
     ${MINGW_PACKAGE_PREFIX}-pkgconf \
     ${MINGW_PACKAGE_PREFIX}-libadwaita \
     ${MINGW_PACKAGE_PREFIX}-blueprint-compiler \
+    ${MINGW_PACKAGE_PREFIX}-jq \
     zip
 
 PROFILE=default
@@ -65,25 +66,21 @@ ROOT_DIR=$PWD
 
 MSYS2_ARG_CONV_EXCL="--prefix=" meson setup build --prefix=/ -Dprofile=$PROFILE
 
-rm -rf $ROOT_DIR/build/win32-portable
+VERSION=$(meson introspect build --projectinfo | jq -r '.version')
+
+OUTDIR=$ROOT_DIR/build/MQTTy-$VERSION-win32-portable-x86_64
+
+rm -rf $OUTDIR
 
 # FIXME: Sometimes the command works, sometimes not,
 # It fails during Paho MQTT C library building, but if you try one or two
 # more tries it just works magically
 ninja -C build
-DESTDIR=$ROOT_DIR/build/win32-portable ninja -C build install
+DESTDIR=$OUTDIR ninja -C build install
 
-cd $ROOT_DIR/build/win32-portable
+cd $OUTDIR
 
 mkdir -p lib share
-
-# Copy required DLLs into bin/
-cp $(
-    ldd bin/MQTTy.exe $MINGW_PREFIX/gdk-pixbuf-2.0/2.10.0/loaders/*.dll |
-    grep "$MINGW_PREFIX" |
-    awk '{ print $3 }' |
-    sort | uniq
-) bin/
 
 cp $MINGW_PREFIX/bin/gdbus.exe bin/
 cp $MINGW_PREFIX/bin/gspawn-win64-helper.exe bin/
@@ -103,12 +100,20 @@ for path in $PIXBUF_FILES; do
     cp $path $(realpath -m --relative-to=$MINGW_PREFIX $path)
 done
 
+# Copy required DLLs into bin/
+cp $(
+    ldd bin/MQTTy.exe lib/gdk-pixbuf-2.0/2.10.0/*.dll |
+    grep "$MINGW_PREFIX" |
+    awk '{ print $3 }' |
+    sort | uniq
+) bin/
+
 cp -RTn $MINGW_PREFIX/share/glib-2.0 share/glib-2.0
 cp -RTn $MINGW_PREFIX/share/icons/Adwaita share/icons/Adwaita
 cp -RTn $MINGW_PREFIX/share/icons/hicolor share/icons/hicolor
 cp -RTn $MINGW_PREFIX/share/gtksourceview-5 share/gtksourceview-5
 
-for lang in $(cat "$ROOT_DIR/po/LINGUAS" | grep -E '.+'); do
+for lang in $(cat "$ROOT_DIR/po/LINGUAS"); do
     for pkg in gdk-pixbuf gettext-runtime glib20 gtk40 gtksourceview-5 libadwaita shared-mime-info; do
         MO_PATH=$MINGW_PREFIX/share/locale/$lang/LC_MESSAGES/$pkg.mo
         if [ -f $MO_PATH ]; then
@@ -120,8 +125,25 @@ done
 glib-compile-schemas.exe share/glib-2.0/schemas
 gtk4-update-icon-cache.exe -t share/icons/hicolor
 
-OUTFILE=MQTTy-win32-portable-x86_64.zip
+# Copy legal files
+cp $ROOT_DIR/COPYING $ROOT_DIR/NOTICE .
 
-rm -f ../$OUTFILE
+# Little custom README file
+echo "Copyright (c) 2025 Oscar Pernia
 
-zip -r ../$OUTFILE *
+This software is licensed under the terms of the GNU GPL 3.0 license,
+or later versions. You will find a copy of the license in the COPYING file.
+
+You can download a copy of this software by visiting:
+
+https://github.com/otaxhu/MQTTy/releases
+
+To run MQTTY just execute the bin/MQTTy.exe file" > README
+
+OUTFILE=$(basename $OUTDIR).zip
+
+cd ..
+
+rm -f $OUTFILE
+
+zip -r $OUTFILE $OUTDIR
