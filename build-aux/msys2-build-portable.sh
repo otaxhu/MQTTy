@@ -102,7 +102,7 @@ done
 
 # Copy required DLLs into bin/
 cp $(
-    ldd bin/MQTTy.exe lib/gdk-pixbuf-2.0/2.10.0/*.dll |
+    ldd bin/MQTTy.exe lib/gdk-pixbuf-2.0/2.10.0/loaders/*.dll |
     grep "$MINGW_PREFIX" |
     awk '{ print $3 }' |
     sort | uniq
@@ -138,7 +138,7 @@ You can download a copy of this software by visiting:
 
 https://github.com/otaxhu/MQTTy/releases
 
-To run MQTTY just execute the bin/MQTTy.exe file" > README
+To run MQTTy just execute the bin/MQTTy.exe file" > README
 
 OUTFILE=$(basename $OUTDIR).zip
 
@@ -146,4 +146,4 @@ cd ..
 
 rm -f $OUTFILE
 
-zip -r $OUTFILE $OUTDIR
+zip -rq $OUTFILE $OUTDIR
