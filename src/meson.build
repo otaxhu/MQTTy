@@ -45,7 +45,12 @@ else
   message('Building in debug mode')
 endif
 
-cargo_env = [ 'CARGO_HOME=' + meson.project_build_root() / 'cargo-home' ]
+cargo_env = [
+  'CARGO_HOME=' + meson.project_build_root() / 'cargo-home',
+  # FIXME: Remove this when this issue get fixed
+  # https://github.com/eclipse-paho/paho.mqtt.rust/pull/249
+  'CFLAGS=-std=c99',
+]
 
 cargo_build = custom_target(
   'cargo-build',

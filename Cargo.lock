@@ -17,6 +17,7 @@ dependencies = [
  "sourceview5",
  "tracing",
  "tracing-subscriber",
+ "winresource",
 ]
 
 [[package]]
@@ -1238,6 +1239,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "852e951cb7832cb45cb1169900d19760cfa39b82bc0ea9c0e5a14ae88411c98b"
 
 [[package]]
+name = "version_check"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
 name = "winapi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1339,4 +1346,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e7f4ea97f6f78012141bcdb6a216b2609f0979ada50b20ca5b52dde2eac2bb1"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "winresource"
+version = "0.1.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba4a67c78ee5782c0c1cb41bebc7e12c6e79644daa1650ebbc1de5d5b08593f7"
+dependencies = [
+ "toml",
+ "version_check",
 ]
