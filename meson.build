@@ -17,7 +17,19 @@ project(
   'MQTTy',
   'rust',
   version: run_command(
-    'tq', '-f=Cargo.toml', '-r', 'package.version',
+    # Plain old AWK, sorry for tq tool, but you are very hard to install in networkless
+    # environments
+    'awk',
+    '''
+      {
+        match($0, /\s*version\s*=\s*"(.*)"/, arr);
+        if (arr[1] != "") {
+          print arr[1];
+          exit;
+        }
+      }
+    ''',
+    'Cargo.toml',
     check: true,
   ).stdout().strip(),
   meson_version: '>= 0.59',
