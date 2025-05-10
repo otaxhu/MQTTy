@@ -2,6 +2,7 @@
 name = "MQTTy"
 authors = ["Oscar Pernia <oscarperniamoreno@gmail.com>"]
 edition = "2021"
+version = "0.1.2"
 
 [profile.release]
 lto = true
