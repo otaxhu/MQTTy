@@ -146,4 +146,4 @@ cd ..
 
 rm -f $OUTFILE
 
-zip -rq $OUTFILE $OUTDIR
+zip -rq $OUTFILE $(basename $OUTDIR)

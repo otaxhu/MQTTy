@@ -16,7 +16,10 @@
 project(
   'MQTTy',
   'rust',
-  version: '0.1.2',
+  version: run_command(
+    'tq', '-f=Cargo.toml', '-r', 'package.version',
+    check: true,
+  ).stdout().strip(),
   meson_version: '>= 0.59',
   license: 'GPL-3.0-or-later',
 )
