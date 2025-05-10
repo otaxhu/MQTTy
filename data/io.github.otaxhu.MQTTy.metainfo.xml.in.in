@@ -50,6 +50,19 @@
 
   <!-- Put latest release as the first one -->
   <releases>
+    <release date="2025-05-10" version="0.1.3">
+      <description translate="no" translatable="no">
+        <p>Added:</p>
+        <ul>
+          <li>MQTTy now runs on Windows 10/11 systems arch x86_64</li>
+        </ul>
+        <p>UX Improvements:</p>
+        <ul>
+          <li>QoS radio buttons now activates themselves when they get focused by keyboard users
+          </li>
+        </ul>
+      </description>
+    </release>
     <release date="2025-05-04" version="0.1.2">
       <description translate="no" translatable="no">
         <p>UX improvements:</p>
