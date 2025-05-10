@@ -138,7 +138,7 @@ You can download a copy of this software by visiting:
 
 https://github.com/otaxhu/MQTTy/releases
 
-To run MQTTy just execute the bin/MQTTy.exe file" > README
+To run MQTTy just execute the bin/MQTTy.exe file" > README.txt
 
 OUTFILE=$(basename $OUTDIR).zip
 
