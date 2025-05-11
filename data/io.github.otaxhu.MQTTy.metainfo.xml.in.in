@@ -50,6 +50,16 @@
 
   <!-- Put latest release as the first one -->
   <releases>
+    <release date="2025-05-11" version="0.1.4">
+      <description translate="no" translatable="no">
+        <p>Windows fixes:</p>
+        <ul>
+          <li>Application did not rendered properly on old Intel iGPU, by default
+            enable software rendering (Cairo), users can opt-in to use hardware acceleration
+          </li>
+        </ul>
+      </description>
+    </release>
     <release date="2025-05-10" version="0.1.3">
       <description translate="no" translatable="no">
         <p>Added:</p>
