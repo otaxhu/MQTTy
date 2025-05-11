@@ -138,7 +138,21 @@ You can download a copy of this software by visiting:
 
 https://github.com/otaxhu/MQTTy/releases
 
-To run MQTTy just execute the bin/MQTTy.exe file" > README.txt
+To run MQTTy just execute the bin/MQTTy.exe file
+
+# Troubleshooting
+
+- Bad performace:
+
+  If you are experiencing bad performance using MQTTy, you can enable hardware
+  acceleration by setting the 'GSK_RENDERER' environment variable to one of
+  'gl' or 'vulkan', this method will work only if you have updated graphics
+  drivers, and you are not using an old Intel iGPU.
+  
+  If none of those variables worked, you must make sure to unset the variable
+  to return to the previous state.
+  
+  For technical users, MQTTy uses 'GSK_RENDERER=cairo' as the default value" > README.txt
 
 OUTFILE=$(basename $OUTDIR).zip
 
