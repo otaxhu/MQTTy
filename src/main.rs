@@ -55,6 +55,14 @@ fn app_root_rel_path(path: &str) -> PathBuf {
 }
 
 fn main() -> glib::ExitCode {
+    // Prepare Windows-specific environment
+    #[cfg(target_os = "windows")]
+    {
+        if let Err(_) = std::env::var("GSK_RENDERER") {
+            std::env::set_var("GSK_RENDERER", "cairo");
+        }
+    }
+
     // Prepare i18n
     gettextrs::setlocale(LocaleCategory::LcAll, "");
     gettextrs::bindtextdomain(GETTEXT_PACKAGE, app_root_rel_path("share/locale"))
