@@ -2,6 +2,8 @@
 
 MQTTy it's a native MQTT GUI client written in Rust, that allows you to do what an MQTT client does, but in an easy and graphical way, with a focus on debugging and testing MQTT topics.
 
+![Publish view](/data/screenshots/publish_view.png)
+
 ## Features:
 
 - ### Publish MQTT messages
