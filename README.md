@@ -25,7 +25,7 @@ MQTTy it's a native MQTT GUI client written in Rust, that allows you to do what 
 ## Downloads:
 
 - ### Windows 10/11:
-  Download the `MQTTy-X.Y.Z-win32-portable.zip` file from the [releases page](https://github.com/otaxhu/MQTTy/releases/latest), uncompress it and run the `bin/MQTTy.exe` executable.
+  Download the `MQTTy-X.Y.Z-win32-portable-x86_64.zip` file from the [releases page](https://github.com/otaxhu/MQTTy/releases/latest), extract it and run the `bin/MQTTy.exe` executable (**No installation needed**).
 
 - ### Flathub:
   <a href="https://flathub.org/apps/io.github.otaxhu.MQTTy">
