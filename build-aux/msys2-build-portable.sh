@@ -127,12 +127,14 @@ gtk4-update-icon-cache.exe -t share/icons/hicolor
 
 # Copy legal files
 cp $ROOT_DIR/COPYING $ROOT_DIR/NOTICE .
+mv COPYING COPYING.txt
+mv NOTICE NOTICE.txt
 
 # Little custom README file
 echo "Copyright (c) 2025 Oscar Pernia
 
 This software is licensed under the terms of the GNU GPL 3.0 license,
-or later versions. You will find a copy of the license in the COPYING file.
+or later versions. You will find a copy of the license in the COPYING.txt file.
 
 You can download a copy of this software by visiting:
 
@@ -148,10 +150,10 @@ To run MQTTy just execute the bin/MQTTy.exe file
   acceleration by setting the 'GSK_RENDERER' environment variable to one of
   'gl' or 'vulkan', this method will work only if you have updated graphics
   drivers, and you are not using an old Intel iGPU.
-  
+
   If none of those variables worked, you must make sure to unset the variable
   to return to the previous state.
-  
+
   For technical users, MQTTy uses 'GSK_RENDERER=cairo' as the default value" > README.txt
 
 OUTFILE=$(basename $OUTDIR).zip
