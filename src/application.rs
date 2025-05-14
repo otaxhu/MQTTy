@@ -300,6 +300,19 @@ impl MQTTyApplication {
     // Sets up keyboard shortcuts
     fn setup_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
+        self.set_accels_for_action("win.publish-send", &["<Control>Return"]);
+        self.set_accels_for_action("win.publish-new-tab", &["<Control>t"]);
+        self.set_accels_for_action("win.publish-delete-tab", &["<Control>w"]);
+        // // TODO: Needs investigation
+        // //
+        // // This is a nice feature I want to add, being able to change between views
+        // // using keyboard navigation, but the arrow keys gets captured by the focus
+        // // handler, I need some way to disable it if the <Alt> key is pressed
+        // //
+        // // For future me, see GtkEventControllerKey
+        //
+        // self.set_accels_for_action("win.set-publish-view", &["<Alt>Left"]);
+        // self.set_accels_for_action("win.set-subscriptions-view", &["<Alt>Right"]);
     }
 
     fn setup_css(&self) {
