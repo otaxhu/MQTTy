@@ -14,11 +14,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use adw::subclass::prelude::*;
+use formatx::formatx;
+use gettextrs::gettext;
 use gtk::prelude::*;
 use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
 use crate::config;
+use crate::toast::MQTTyToastBuilder;
+use crate::widgets::{MQTTyPublishView, MQTTyPublishViewNotebook};
 
 mod imp {
 
@@ -29,6 +33,12 @@ mod imp {
     pub struct MQTTyWindow {
         #[template_child]
         pub toast_overlay: TemplateChild<adw::ToastOverlay>,
+
+        #[template_child]
+        view_stack: TemplateChild<adw::ViewStack>,
+
+        #[template_child]
+        publish_view: TemplateChild<MQTTyPublishView>,
     }
 
     #[glib::object_subclass]
@@ -59,6 +69,139 @@ mod imp {
 
             // Load latest window state
             obj.load_window_size();
+
+            let publish_view = &self.publish_view;
+            let publish_tab_view = publish_view.tab_view();
+
+            let action_publish_send = gio::SimpleAction::new("publish-send", None);
+            action_publish_send.connect_activate(glib::clone!(
+                #[weak]
+                publish_tab_view,
+                #[weak]
+                obj,
+                move |_, _| {
+                    let publishing_toast = MQTTyToastBuilder::new()
+                        .title(gettext("Publishing message..."))
+                        .timeout(3)
+                        .build();
+
+                    obj.toast(&publishing_toast);
+
+                    let notebook = publish_tab_view
+                        .selected_page()
+                        .unwrap()
+                        .child()
+                        .downcast::<MQTTyPublishViewNotebook>()
+                        .unwrap();
+
+                    glib::spawn_future_local(async move {
+                        let ret = notebook.send().await;
+
+                        publishing_toast.dismiss();
+
+                        let toast = match ret {
+                            Ok(_) => MQTTyToastBuilder::new()
+                                .title(
+                                    formatx!(
+                                        gettext("Message published to topic {}"),
+                                        notebook.topic()
+                                    )
+                                    .unwrap(),
+                                )
+                                .icon(
+                                    gtk::Image::builder()
+                                        .icon_name("object-select-symbolic")
+                                        .css_classes(["success"])
+                                        .build()
+                                        .as_ref(),
+                                )
+                                .timeout(3)
+                                .build(),
+                            Err(e) => MQTTyToastBuilder::new()
+                                .title(formatx!(gettext("Error while publishing: {}"), e).unwrap())
+                                .icon(
+                                    gtk::Image::builder()
+                                        .icon_name("network-error-symbolic")
+                                        .build()
+                                        .as_ref(),
+                                )
+                                .timeout(3)
+                                .build(),
+                        };
+
+                        obj.toast(&toast);
+                    });
+                }
+            ));
+
+            let action_publish_new_tab = gio::SimpleAction::new("publish-new-tab", None);
+            action_publish_new_tab.connect_activate(glib::clone!(
+                #[weak]
+                publish_view,
+                move |_, _| {
+                    publish_view.new_tab();
+                }
+            ));
+
+            let action_publish_delete_tab = gio::SimpleAction::new("publish-delete-tab", None);
+            action_publish_delete_tab.connect_activate(glib::clone!(
+                #[weak]
+                publish_tab_view,
+                move |_, _| {
+                    publish_tab_view.close_page(&publish_tab_view.selected_page().unwrap());
+                }
+            ));
+
+            let view_stack = &self.view_stack;
+
+            let action_set_publish_view = gio::SimpleAction::new("set-publish-view", None);
+            action_set_publish_view.connect_activate(glib::clone!(
+                #[weak]
+                view_stack,
+                move |_, _| {
+                    view_stack.set_visible_child_name("publish");
+                }
+            ));
+            let action_set_subscriptions_view =
+                gio::SimpleAction::new("set-subscription-view", None);
+            action_set_subscriptions_view.connect_activate(glib::clone!(
+                #[weak]
+                view_stack,
+                move |_, _| {
+                    view_stack.set_visible_child_name("subscriptions");
+                }
+            ));
+
+            let in_publish_view = view_stack
+                .property_expression_weak("visible-child-name")
+                .chain_closure::<bool>(glib::closure!(
+                    move |_: Option<glib::Object>, name: &str| name == "publish"
+                ));
+
+            let n_tabs = publish_tab_view.property_expression_weak("n-pages");
+
+            let has_pages_and_in_publish_view = gtk::ClosureExpression::new::<bool>(
+                [in_publish_view.upcast_ref(), &n_tabs],
+                glib::closure!(move |_: Option<glib::Object>,
+                                     in_publish_view: bool,
+                                     n_tabs: i32| {
+                    in_publish_view && n_tabs != 0
+                }),
+            );
+            has_pages_and_in_publish_view.bind(&action_publish_send, "enabled", glib::Object::NONE);
+            has_pages_and_in_publish_view.bind(
+                &action_publish_delete_tab,
+                "enabled",
+                glib::Object::NONE,
+            );
+            in_publish_view.bind(&action_publish_new_tab, "enabled", glib::Object::NONE);
+
+            obj.add_action(&action_publish_send);
+            obj.add_action(&action_publish_new_tab);
+            obj.add_action(&action_publish_delete_tab);
+
+            obj.add_action(&action_set_publish_view);
+            obj.add_action(&action_set_subscriptions_view);
         }
     }
 

@@ -29,18 +29,13 @@ use std::cell::Cell;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use formatx::formatx;
 use gettextrs::gettext;
 use gtk::glib;
 
-use crate::application::MQTTyApplication;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
-use crate::main_window::MQTTyWindow;
 use crate::subclass::prelude::*;
 
 mod imp {
-
-    use crate::toast::MQTTyToastBuilder;
 
     use super::*;
 
@@ -52,7 +47,7 @@ mod imp {
         display_mode: Cell<MQTTyDisplayMode>,
 
         #[template_child]
-        tab_view: TemplateChild<adw::TabView>,
+        pub tab_view: TemplateChild<adw::TabView>,
 
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
@@ -83,111 +78,6 @@ mod imp {
         type Interfaces = (MQTTyDisplayModeIface,);
 
         fn class_init(klass: &mut Self::Class) {
-            klass.install_action("publish-view.new-tab", None, |this, _, _| {
-                let notebook = MQTTyPublishViewNotebook::new();
-                this.bind_property("display_mode", &notebook, "display_mode")
-                    .sync_create()
-                    .build();
-
-                let topic_expr = notebook
-                    .property_expression_weak("topic")
-                    .chain_closure::<String>(glib::closure!(
-                        move |_: Option<glib::Object>, topic: String| {
-                            if topic.is_empty() {
-                                gettext("(untitled)")
-                            } else {
-                                topic
-                            }
-                        }
-                    ));
-
-                let page = this.imp().tab_view.append(&notebook);
-
-                topic_expr.bind(&page, "title", glib::Object::NONE);
-
-                // We create a tooltip based on topic and url values, so that users knows how to
-                // differentiate between similar messages
-                gtk::ClosureExpression::new::<String>(
-                    [
-                        topic_expr.upcast(),
-                        notebook.property_expression_weak("url").upcast(),
-                    ],
-                    glib::closure!(move |_: Option<glib::Object>, topic: String, url: String| {
-                        if url.is_empty() {
-                            topic
-                        } else {
-                            [topic, url].join("\r\n")
-                        }
-                    }),
-                )
-                .bind(&page, "tooltip", glib::Object::NONE);
-            });
-
-            klass.install_action("publish-view.send", None, |this, _, _| {
-                let notebook = this
-                    .imp()
-                    .tab_view
-                    .selected_page()
-                    .unwrap()
-                    .child()
-                    .downcast::<MQTTyPublishViewNotebook>()
-                    .unwrap();
-
-                let app = MQTTyApplication::get_singleton();
-
-                let window = app
-                    .active_window()
-                    .unwrap()
-                    .downcast::<MQTTyWindow>()
-                    .unwrap();
-
-                let publishing_toast = MQTTyToastBuilder::new()
-                    .timeout(2)
-                    .title(gettext("Publishing message..."))
-                    .build();
-
-                window.toast(&publishing_toast);
-
-                glib::spawn_future_local(async move {
-                    let ret = notebook.send().await;
-
-                    publishing_toast.dismiss();
-
-                    let toast = match ret {
-                        Ok(_) => MQTTyToastBuilder::new()
-                            .title(
-                                formatx!(
-                                    gettext("Message published to topic {}"),
-                                    notebook.topic()
-                                )
-                                .unwrap(),
-                            )
-                            .icon(
-                                gtk::Image::builder()
-                                    .icon_name("object-select-symbolic")
-                                    .css_classes(["success"])
-                                    .build()
-                                    .as_ref(),
-                            )
-                            .timeout(2)
-                            .build(),
-
-                        Err(e) => MQTTyToastBuilder::new()
-                            .title(formatx!(gettext("Error while publishing: {}"), e).unwrap())
-                            .icon(
-                                gtk::Image::builder()
-                                    .icon_name("network-error-symbolic")
-                                    .build()
-                                    .as_ref(),
-                            )
-                            .timeout(2)
-                            .build(),
-                    };
-
-                    window.toast(&toast);
-                });
-            });
-
             klass.bind_template();
         }
 
@@ -227,4 +117,50 @@ glib::wrapper! {
     pub struct MQTTyPublishView(ObjectSubclass<imp::MQTTyPublishView>)
         @extends gtk::Widget, adw::Bin,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
+}
+
+impl MQTTyPublishView {
+    pub fn tab_view(&self) -> &adw::TabView {
+        &*self.imp().tab_view
+    }
+
+    pub fn new_tab(&self) {
+        let notebook = MQTTyPublishViewNotebook::new();
+        self.bind_property("display_mode", &notebook, "display_mode")
+            .sync_create()
+            .build();
+
+        let topic_expr = notebook
+            .property_expression_weak("topic")
+            .chain_closure::<String>(glib::closure!(
+                move |_: Option<glib::Object>, topic: String| {
+                    if topic.is_empty() {
+                        gettext("(untitled)")
+                    } else {
+                        topic
+                    }
+                }
+            ));
+
+        let page = self.imp().tab_view.append(&notebook);
+
+        topic_expr.bind(&page, "title", glib::Object::NONE);
+
+        // We create a tooltip based on topic and url values, so that users knows how to
+        // differentiate between similar messages
+        gtk::ClosureExpression::new::<String>(
+            [
+                topic_expr.upcast(),
+                notebook.property_expression_weak("url").upcast(),
+            ],
+            glib::closure!(move |_: Option<glib::Object>, topic: String, url: String| {
+                if url.is_empty() {
+                    topic
+                } else {
+                    [topic, url].join("\r\n")
+                }
+            }),
+        )
+        .bind(&page, "tooltip", glib::Object::NONE);
+    }
 }
