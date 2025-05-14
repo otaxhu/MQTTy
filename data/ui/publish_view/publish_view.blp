@@ -35,7 +35,7 @@ template $MQTTyPublishView: Adw.Bin {
             "flat",
           ]
 
-          action-name: "publish-view.new-tab";
+          action-name: "win.publish-new-tab";
           icon-name: "tab-new-symbolic";
         }
 
@@ -46,7 +46,7 @@ template $MQTTyPublishView: Adw.Bin {
 
           // Not visible by default
           visible: false;
-          action-name: "publish-view.send";
+          action-name: "win.publish-send";
           label: _("Send");
         }
       };
@@ -70,7 +70,7 @@ template $MQTTyPublishView: Adw.Bin {
                 "pill",
               ]
 
-              action-name: "publish-view.new-tab";
+              action-name: "win.publish-new-tab";
 
               child: Adw.ButtonContent {
                 label: _("New publish tab");
