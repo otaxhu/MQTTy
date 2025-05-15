@@ -303,13 +303,13 @@ impl MQTTyApplication {
         self.set_accels_for_action("win.publish-send", &["<Control>Return"]);
         self.set_accels_for_action("win.publish-new-tab", &["<Control>t"]);
         self.set_accels_for_action("win.publish-delete-tab", &["<Control>w"]);
-        // // TODO: Needs investigation
-        // //
-        // // This is a nice feature I want to add, being able to change between views
-        // // using keyboard navigation, but the arrow keys gets captured by the focus
-        // // handler, I need some way to disable it if the <Alt> key is pressed
-        // //
-        // // For future me, see GtkEventControllerKey
+
+        // This accelerators are being setted in the constructed method of
+        // MQTTyWindow through a custom EventControllerKey, the reason being
+        // that the focus handler was capturing the arrows keys, so we are overriding
+        // that behaviour.
+        //
+        // These actions no longer exists.
         //
         // self.set_accels_for_action("win.set-publish-view", &["<Alt>Left"]);
         // self.set_accels_for_action("win.set-subscriptions-view", &["<Alt>Right"]);
