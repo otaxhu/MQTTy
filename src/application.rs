@@ -304,15 +304,8 @@ impl MQTTyApplication {
         self.set_accels_for_action("win.publish-new-tab", &["<Control>t"]);
         self.set_accels_for_action("win.publish-delete-tab", &["<Control>w"]);
 
-        // This accelerators are being setted in the constructed method of
-        // MQTTyWindow through a custom EventControllerKey, the reason being
-        // that the focus handler was capturing the arrows keys, so we are overriding
-        // that behaviour.
-        //
-        // These actions no longer exists.
-        //
-        // self.set_accels_for_action("win.set-publish-view", &["<Alt>Left"]);
-        // self.set_accels_for_action("win.set-subscriptions-view", &["<Alt>Right"]);
+        self.set_accels_for_action("win.set-publish-view", &["<Alt>Left"]);
+        self.set_accels_for_action("win.set-subscriptions-view", &["<Alt>Right"]);
     }
 
     fn setup_css(&self) {

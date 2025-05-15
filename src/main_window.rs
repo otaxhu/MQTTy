@@ -17,7 +17,7 @@ use adw::subclass::prelude::*;
 use formatx::formatx;
 use gettextrs::gettext;
 use gtk::prelude::*;
-use gtk::{gdk, gio, glib};
+use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
 use crate::config;
@@ -182,35 +182,27 @@ mod imp {
             obj.add_action(&action_publish_new_tab);
             obj.add_action(&action_publish_delete_tab);
 
-            // Custom shortcuts binding
-            // I couldn't use Application::set_accels_for_action because the
-            // arrow keys were being captured by the focus handler (This is
-            // completely outside of my reach),
-            // so I'm raw capturing the keys
-            let key_controller = gtk::EventControllerKey::new();
-            key_controller.set_name(Some("MQTTy-change-stack-view-shortcuts"));
-            key_controller.connect_key_pressed(glib::clone!(
+            let action_set_publish_view = gio::SimpleAction::new("set-publish-view", None);
+            action_set_publish_view.connect_activate(glib::clone!(
                 #[weak]
                 view_stack,
-                #[upgrade_or_panic]
-                move |_, key, _, modifier| {
-                    if modifier != gdk::ModifierType::ALT_MASK {
-                        return glib::Propagation::Proceed;
-                    }
-
-                    let visible_child_name = match key {
-                        gdk::Key::Left => "publish",
-                        gdk::Key::Right => "subscriptions",
-                        _ => return glib::Propagation::Proceed,
-                    };
-
-                    view_stack.set_visible_child_name(visible_child_name);
-
-                    glib::Propagation::Stop
+                move |_, _| {
+                    view_stack.set_visible_child_name("publish");
                 }
             ));
 
-            obj.add_controller(key_controller);
+            let action_set_subscriptions_view =
+                gio::SimpleAction::new("set-subscriptions-view", None);
+            action_set_subscriptions_view.connect_activate(glib::clone!(
+                #[weak]
+                view_stack,
+                move |_, _| {
+                    view_stack.set_visible_child_name("subscriptions");
+                }
+            ));
+
+            obj.add_action(&action_set_publish_view);
+            obj.add_action(&action_set_subscriptions_view);
         }
     }
 
