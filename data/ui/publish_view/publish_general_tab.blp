@@ -33,20 +33,20 @@ template $MQTTyPublishGeneralTab: Adw.Bin {
           valign: center;
 
           CheckButton mqtt_3_button {
-            label: C_("mqtt version number", "v3.x");
+            label: C_("mqtt-version-number", "v3.x");
             group: mqtt_5_button;
             action-name: "publish-view-notebook.mqtt-version";
           }
 
           CheckButton mqtt_5_button {
-            label: C_("mqtt version number", "v5");
+            label: C_("mqtt-version-number", "v5");
             action-name: "publish-view-notebook.mqtt-version";
           }
         }
       }
 
       Adw.ActionRow qos_row {
-        title: C_("mqtt qos abbreviation", "QoS");
+        title: C_("mqtt-qos-abbreviation", "QoS");
         title-lines: 1;
         subtitle: _("Quality of service");
         subtitle-lines: 1;
