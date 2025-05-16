@@ -30,6 +30,35 @@ ShortcutsWindow help_overlay {
         title: C_("shortcuts-window", "Quit");
         action-name: "app.quit";
       }
+
+      ShortcutsShortcut {
+        title: C_("shortcuts-window", "Change to publish view");
+        action-name: "win.set-publish-view";
+      }
+
+      ShortcutsShortcut {
+        title: C_("shortcuts-window", "Change to subscriptions view");
+        action-name: "win.set-subscriptions-view";
+      }
+    }
+
+    ShortcutsGroup {
+      title: C_("shortcuts-window", "Publish view");
+
+      ShortcutsShortcut {
+        title: C_("shortcuts-window", "New tab");
+        action-name: "win.publish-new-tab";
+      }
+
+      ShortcutsShortcut {
+        title: C_("shortcuts-window", "Delete current tab");
+        action-name: "win.publish-delete-tab";
+      }
+
+      ShortcutsShortcut {
+        title: C_("shortcuts-window", "Send message in current tab");
+        action-name: "win.publish-send";
+      }
     }
   }
 }
