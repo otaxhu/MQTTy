@@ -38,10 +38,10 @@ impl MQTTyContentType {
 
     pub fn translated(&self) -> String {
         match self {
-            MQTTyContentType::None => pgettext("body content type", "(none)"),
-            MQTTyContentType::Json => pgettext("body content type", "JSON"),
-            MQTTyContentType::Xml => pgettext("body content type", "XML"),
-            MQTTyContentType::Raw => pgettext("body content type", "Raw"),
+            MQTTyContentType::None => pgettext("body-content-type", "(none)"),
+            MQTTyContentType::Json => pgettext("body-content-type", "JSON"),
+            MQTTyContentType::Xml => pgettext("body-content-type", "XML"),
+            MQTTyContentType::Raw => pgettext("body-content-type", "Raw"),
         }
     }
 
