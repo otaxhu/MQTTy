@@ -36,11 +36,13 @@ template $MQTTyPublishGeneralTab: Adw.Bin {
             label: C_("mqtt-version-number", "v3.x");
             group: mqtt_5_button;
             action-name: "publish-view-notebook.mqtt-version";
+            action-target: "'v3'";
           }
 
           CheckButton mqtt_5_button {
             label: C_("mqtt-version-number", "v5");
             action-name: "publish-view-notebook.mqtt-version";
+            action-target: "'v5'";
           }
         }
       }
@@ -59,17 +61,20 @@ template $MQTTyPublishGeneralTab: Adw.Bin {
           CheckButton qos_0_button {
             label: _("0");
             action-name: "publish-view-notebook.qos";
+            action-target: "'qos_0'";
           }
 
           CheckButton qos_1_button {
             label: _("1");
             action-name: "publish-view-notebook.qos";
+            action-target: "'qos_1'";
             group: qos_0_button;
           }
 
           CheckButton qos_2_button {
             label: _("2");
             action-name: "publish-view-notebook.qos";
+            action-target: "'qos_2'";
             group: qos_0_button;
           }
         }

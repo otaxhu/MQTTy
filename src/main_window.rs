@@ -22,7 +22,7 @@ use gtk::{gio, glib};
 use crate::application::MQTTyApplication;
 use crate::config;
 use crate::toast::MQTTyToastBuilder;
-use crate::widgets::{MQTTyPublishView, MQTTyPublishViewNotebook};
+use crate::widgets::{MQTTyPublishView, MQTTyPublishViewNotebook, MQTTySubscriptionsView};
 
 mod imp {
 
@@ -39,6 +39,9 @@ mod imp {
 
         #[template_child]
         publish_view: TemplateChild<MQTTyPublishView>,
+
+        #[template_child]
+        subscriptions_view: TemplateChild<MQTTySubscriptionsView>,
     }
 
     #[glib::object_subclass]
@@ -203,6 +206,24 @@ mod imp {
 
             obj.add_action(&action_set_publish_view);
             obj.add_action(&action_set_subscriptions_view);
+
+            let subscriptions_view = &self.subscriptions_view;
+
+            let action_subscriptions_new = gio::SimpleAction::new("subscriptions-new", None);
+            action_subscriptions_new.connect_activate(glib::clone!(
+                #[weak]
+                subscriptions_view,
+                move |_, _| {
+                    subscriptions_view.new_subscription();
+                }
+            ));
+            let in_subscriptions_view = in_publish_view.chain_closure::<bool>(glib::closure!(
+                |_: Option<glib::Object>, in_publish_view: bool| !in_publish_view
+            ));
+
+            in_subscriptions_view.bind(&action_subscriptions_new, "enabled", glib::Object::NONE);
+
+            obj.add_action(&action_subscriptions_new);
         }
     }
 
