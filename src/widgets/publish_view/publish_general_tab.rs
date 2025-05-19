@@ -71,18 +71,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MQTTyPublishGeneralTab {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            self.mqtt_3_button.set_action_target(Some("3"));
-            self.mqtt_5_button.set_action_target(Some("5"));
-
-            self.qos_0_button.set_action_target(Some("0"));
-            self.qos_1_button.set_action_target(Some("1"));
-            self.qos_2_button.set_action_target(Some("2"));
-        }
-    }
+    impl ObjectImpl for MQTTyPublishGeneralTab {}
     impl WidgetImpl for MQTTyPublishGeneralTab {}
     impl BinImpl for MQTTyPublishGeneralTab {}
 

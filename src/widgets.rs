@@ -19,6 +19,7 @@ mod edit_conn_list_box;
 mod key_value_row;
 mod publish_view;
 mod source_view;
+mod subscriptions_view;
 
 pub mod base_card;
 
@@ -32,3 +33,4 @@ pub use publish_view::{
     MQTTyPublishView, MQTTyPublishViewNotebook,
 };
 pub use source_view::MQTTySourceView;
+pub use subscriptions_view::{MQTTySubscriptionsRow, MQTTySubscriptionsView};

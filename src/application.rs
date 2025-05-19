@@ -30,7 +30,7 @@ use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanel
 use crate::widgets::{
     MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyKeyValueRow,
     MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab,
-    MQTTyPublishView, MQTTySourceView,
+    MQTTyPublishView, MQTTySourceView, MQTTySubscriptionsRow, MQTTySubscriptionsView,
 };
 
 mod imp {
@@ -83,6 +83,9 @@ mod imp {
             MQTTyPublishBodyTab::static_type();
             MQTTyPublishUserPropsTab::static_type();
             MQTTyPublishAuthTab::static_type();
+
+            MQTTySubscriptionsView::static_type();
+            MQTTySubscriptionsRow::static_type();
 
             // Pages
             MQTTyBasePage::static_type();
@@ -300,9 +303,12 @@ impl MQTTyApplication {
     // Sets up keyboard shortcuts
     fn setup_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
+
         self.set_accels_for_action("win.publish-send", &["<Control>Return"]);
         self.set_accels_for_action("win.publish-new-tab", &["<Control>t"]);
         self.set_accels_for_action("win.publish-delete-tab", &["<Control>w"]);
+
+        self.set_accels_for_action("win.subscriptions-new", &["<Control>t"]);
 
         self.set_accels_for_action("win.set-publish-view", &["<Alt>Left"]);
         self.set_accels_for_action("win.set-subscriptions-view", &["<Alt>Right"]);
