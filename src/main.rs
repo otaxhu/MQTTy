@@ -27,6 +27,7 @@ mod objects;
 mod pages;
 mod subclass;
 mod toast;
+mod utils;
 mod widgets;
 
 use std::path::PathBuf;

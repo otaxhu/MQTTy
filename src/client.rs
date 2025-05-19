@@ -242,6 +242,12 @@ impl MQTTyClient {
     }
 }
 
+impl Default for MQTTyClient {
+    fn default() -> Self {
+        Self::new("", Default::default(), "", "")
+    }
+}
+
 /*
     ======== PAHO ADAPTOR CODE ========
 */

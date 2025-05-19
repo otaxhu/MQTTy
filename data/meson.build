@@ -28,6 +28,8 @@ blueprint_files = [
   'ui/publish_view/publish_body_tab.blp',
   'ui/publish_view/publish_user_props_tab.blp',
   'ui/publish_view/publish_auth_tab.blp',
+  'ui/subscriptions_view/subscriptions_view.blp',
+  'ui/subscriptions_view/subscriptions_row.blp',
   'ui/pages/base_page.blp',
   'ui/pages/all_conn_page.blp',
   'ui/pages/add_conn_page.blp',

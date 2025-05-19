@@ -17,12 +17,13 @@ use std::cell::{Cell, OnceCell, RefCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use gtk::{gio, glib};
+use gtk::glib;
 
 use crate::client::{MQTTyClient, MQTTyClientMessage, MQTTyClientQos, MQTTyClientVersion};
 use crate::content_type::MQTTyContentType;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::subclass::prelude::*;
+use crate::utils;
 use crate::widgets::MQTTyPublishUserPropsTab;
 
 mod imp {
@@ -114,67 +115,8 @@ mod imp {
 
             let obj = self.obj();
 
-            let group = gio::SimpleActionGroup::new();
-
-            let mqtt_version_state = gio::SimpleAction::new_stateful(
-                "mqtt-version",
-                Some(glib::VariantTy::STRING),
-                &"3".into(),
-            );
-            mqtt_version_state
-                .bind_property("state", &*obj, "mqtt_version")
-                .bidirectional()
-                .sync_create()
-                .transform_to(|_, state: glib::Variant| {
-                    let version = match state.str().unwrap() {
-                        "3" => MQTTyClientVersion::V3X,
-                        "5" => MQTTyClientVersion::V5,
-                        version => panic!("invalid MQTT version: {version}"),
-                    };
-
-                    Some(version)
-                })
-                .transform_from(|_, mqtt_version: MQTTyClientVersion| {
-                    let new_state = match mqtt_version {
-                        MQTTyClientVersion::V3X => "3",
-                        MQTTyClientVersion::V5 => "5",
-                    };
-
-                    Some(glib::Variant::from(new_state))
-                })
-                .build();
-
-            let qos_state =
-                gio::SimpleAction::new_stateful("qos", Some(glib::VariantTy::STRING), &"0".into());
-            qos_state
-                .bind_property("state", &*obj, "qos")
-                .bidirectional()
-                .sync_create()
-                .transform_to(|_, state: glib::Variant| {
-                    let qos = match state.str().unwrap() {
-                        "0" => MQTTyClientQos::Qos0,
-                        "1" => MQTTyClientQos::Qos1,
-                        "2" => MQTTyClientQos::Qos2,
-                        qos => panic!("invalid MQTT QoS: {qos}"),
-                    };
-
-                    Some(qos)
-                })
-                .transform_from(|_, qos: MQTTyClientQos| {
-                    let new_state = match qos {
-                        MQTTyClientQos::Qos0 => "0",
-                        MQTTyClientQos::Qos1 => "1",
-                        MQTTyClientQos::Qos2 => "2",
-                    };
-
-                    Some(glib::Variant::from(new_state))
-                })
-                .build();
-
-            group.add_action(&mqtt_version_state);
-            group.add_action(&qos_state);
-
-            obj.insert_action_group("publish-view-notebook", Some(&group));
+            let (mqtt_version_state, _) =
+                utils::connect_mqtt_version_and_qos_actions(&*obj, "publish-view-notebook");
 
             mqtt_version_state
                 .bind_property("state", &*self.user_properties_stack, "visible-child-name")
