@@ -60,12 +60,8 @@ template $MQTTyWindow: Adw.ApplicationWindow {
           title: _("Subscriptions");
           name: "subscriptions";
           icon-name: "chat-bubbles-empty-symbolic";
-          // TODO: Implement Subscriptions page
-          child: Adw.StatusPage {
-            title: _("Subscriptions are unimplemented!");
-            description: _("Sorry, but the subscriptions are currently unimplemented, stay tuned for new releases.");
-            icon-name: "build-alt-symbolic";
-          };
+
+          child: $MQTTySubscriptionsView subscriptions_view {};
         }
       }
     };
