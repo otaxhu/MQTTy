@@ -30,7 +30,7 @@ use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanel
 use crate::widgets::{
     MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyKeyValueRow,
     MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab,
-    MQTTyPublishView, MQTTySourceView, MQTTySubscriptionsRow, MQTTySubscriptionsView,
+    MQTTyPublishView, MQTTySourceView, MQTTySubscriptionsConnections, MQTTySubscriptionsView,
 };
 
 mod imp {
@@ -85,7 +85,7 @@ mod imp {
             MQTTyPublishAuthTab::static_type();
 
             MQTTySubscriptionsView::static_type();
-            MQTTySubscriptionsRow::static_type();
+            MQTTySubscriptionsConnections::static_type();
 
             // Pages
             MQTTyBasePage::static_type();
@@ -308,7 +308,7 @@ impl MQTTyApplication {
         self.set_accels_for_action("win.publish-new-tab", &["<Control>t"]);
         self.set_accels_for_action("win.publish-delete-tab", &["<Control>w"]);
 
-        self.set_accels_for_action("win.subscriptions-new", &["<Control>t"]);
+        self.set_accels_for_action("win.subscriptions-new-connection", &["<Control>n"]);
 
         self.set_accels_for_action("win.set-publish-view", &["<Alt>Left"]);
         self.set_accels_for_action("win.set-subscriptions-view", &["<Alt>Right"]);

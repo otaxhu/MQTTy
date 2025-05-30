@@ -33,4 +33,6 @@ pub use publish_view::{
     MQTTyPublishView, MQTTyPublishViewNotebook,
 };
 pub use source_view::MQTTySourceView;
-pub use subscriptions_view::{MQTTySubscriptionsRow, MQTTySubscriptionsView};
+pub use subscriptions_view::{
+    MQTTySubscriptionsConnectionRow, MQTTySubscriptionsConnections, MQTTySubscriptionsView,
+};

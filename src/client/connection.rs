@@ -12,25 +12,18 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-using Gtk 4.0;
-using Adw 1;
 
-template $MQTTySubscriptionsView: Adw.Bin {
-  Adw.NavigationSplitView nav_split_view {
-    show-content: false;
-    collapsed: true;
-
-    sidebar: $MQTTySubscriptionsConnections connections {
-      model: bind template.model;
-      row-activated => $connection_activated() swapped;
-    };
-
-    // Connection overview, shows the subscriptions for a specific connection, and some
-    // related utility buttons
-    //
-    // The property is being setted when any connection inside of MQTTySubscriptionsConnections
-    // sidebar is being clicked by the user
-    //
-    // content: ...;
-  }
+/// This is a serializable struct for holding the data necessary for connecting
+/// to a MQTT broker
+///
+/// TODO: Add serde functions
+#[derive(Default, Clone)]
+pub struct MQTTyClientConnection {
+    pub name: String,
+    pub client_id: Option<String>,
+    pub url: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub clean_start: bool,
+    pub connected: bool,
 }
