@@ -1,0 +1,95 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTySubscriptionsConnectionDialog: Adw.AlertDialog {
+  extra-child: Box {
+    spacing: 24;
+    orientation: vertical;
+
+    Adw.ViewSwitcher {
+      stack: view_stack;
+      policy: wide;
+    }
+
+    Adw.ViewStack view_stack {
+      Adw.ViewStackPage {
+        name: "general";
+        title: _("General");
+        icon-name: "applications-system-symbolic";
+
+        child: Adw.PreferencesGroup {
+          Adw.EntryRow {
+            // Translators: This string uses Pango markup, you should translate it following the Pango syntax, you may translate the asterisk and possibly edit the Pango atrributes or add new Pango tags/attributes, DO NOT change the asterisks red color
+            title: _("Connection name <span foreground='#FF0000' weight='bold'>*</span>");
+            use-markup: true;
+            text: bind template.name bidirectional;
+          }
+
+          Adw.EntryRow {
+            // Translators: This string uses Pango markup, you should translate it following the Pango syntax, you may translate the asterisk and possibly edit the Pango atrributes or add new Pango tags/attributes, DO NOT change the asterisks red color
+            title: _("URL <span foreground='#FF0000' weight='bold'>*</span>");
+            use-markup: true;
+            text: bind template.url bidirectional;
+          }
+
+          Adw.ExpanderRow {
+            title: _("Keep session");
+            show-enable-switch: true;
+            expanded: true;
+            enable-expansion: bind template.clean_start bidirectional inverted;
+
+            Adw.EntryRow {
+              title: _("Client ID");
+              tooltip-text: _("If leave empty, a random one will be picked.");
+              text: bind template.client_id bidirectional;
+            }
+          }
+
+          Adw.SwitchRow {
+            title: _("Start connected");
+            active: bind template.connected bidirectional;
+          }
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "authentication";
+        title: _("Authentication");
+        icon-name: "dialog-password-symbolic";
+
+        child: Adw.PreferencesGroup {
+          Adw.EntryRow {
+            title: _("Username");
+            text: bind template.username bidirectional;
+          }
+
+          Adw.PasswordEntryRow {
+            title: _("Password");
+            text: bind template.password bidirectional;
+          }
+        };
+      }
+    }
+  };
+
+  default-response: "save";
+
+  responses [
+    save: _("Save") suggested disabled,
+    cancel: _("Cancel"),
+  ]
+}

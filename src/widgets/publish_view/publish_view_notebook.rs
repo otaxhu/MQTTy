@@ -17,7 +17,7 @@ use std::cell::{Cell, OnceCell, RefCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use gtk::glib;
+use gtk::{gio, glib};
 
 use crate::client::{MQTTyClient, MQTTyClientMessage, MQTTyClientQos, MQTTyClientVersion};
 use crate::content_type::MQTTyContentType;
@@ -115,8 +115,12 @@ mod imp {
 
             let obj = self.obj();
 
-            let (mqtt_version_state, _) =
-                utils::connect_mqtt_version_and_qos_actions(&*obj, "publish-view-notebook");
+            let group = gio::SimpleActionGroup::new();
+
+            let mqtt_version_state = utils::connect_mqtt_version_action(&*obj, &group);
+            utils::connect_qos_action(&*obj, &group);
+
+            obj.insert_action_group("publish-view-notebook", Some(&group));
 
             mqtt_version_state
                 .bind_property("state", &*self.user_properties_stack, "visible-child-name")
@@ -144,12 +148,13 @@ impl MQTTyPublishViewNotebook {
     pub async fn send(&self) -> Result<(), String> {
         let mqtt_version = self.mqtt_version();
 
-        let client = MQTTyClient::new(
-            &self.url(),
-            mqtt_version,
-            &self.username(),
-            &self.password(),
-        );
+        let client = MQTTyClient::builder()
+            .url(&self.url())
+            .mqtt_version(mqtt_version)
+            .username(&self.username())
+            .password(&self.password())
+            .clean_start(true) // Publish view won't have any session associated
+            .build();
 
         client.connect_client().await?;
 
