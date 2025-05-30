@@ -209,12 +209,15 @@ mod imp {
 
             let subscriptions_view = &self.subscriptions_view;
 
-            let action_subscriptions_new = gio::SimpleAction::new("subscriptions-new", None);
+            let action_subscriptions_new =
+                gio::SimpleAction::new("subscriptions-new-connection", None);
             action_subscriptions_new.connect_activate(glib::clone!(
                 #[weak]
                 subscriptions_view,
                 move |_, _| {
-                    subscriptions_view.new_subscription();
+                    glib::spawn_future_local(async move {
+                        subscriptions_view.new_connection().await;
+                    });
                 }
             ));
             let in_subscriptions_view = in_publish_view.chain_closure::<bool>(glib::closure!(

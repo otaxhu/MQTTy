@@ -18,12 +18,10 @@ use gtk::{gio, glib};
 
 use crate::client::{MQTTyClientQos, MQTTyClientVersion};
 
-pub fn connect_mqtt_version_and_qos_actions(
+pub fn connect_mqtt_version_action(
     widget: &impl IsA<gtk::Widget>,
-    action_group_name: &str,
-) -> (gio::Action, gio::Action) {
-    let group = gio::SimpleActionGroup::new();
-
+    group: &gio::SimpleActionGroup,
+) -> gio::Action {
     let mqtt_version_state = gio::SimpleAction::new_stateful(
         "mqtt-version",
         Some(glib::VariantTy::STRING),
@@ -52,6 +50,15 @@ pub fn connect_mqtt_version_and_qos_actions(
         })
         .build();
 
+    group.add_action(&mqtt_version_state);
+
+    mqtt_version_state.upcast()
+}
+
+pub fn connect_qos_action(
+    widget: &impl IsA<gtk::Widget>,
+    group: &gio::SimpleActionGroup,
+) -> gio::Action {
     let qos_state =
         gio::SimpleAction::new_stateful("qos", Some(glib::VariantTy::STRING), &"qos_0".into());
     qos_state
@@ -79,10 +86,7 @@ pub fn connect_mqtt_version_and_qos_actions(
         })
         .build();
 
-    group.add_action(&mqtt_version_state);
     group.add_action(&qos_state);
 
-    widget.insert_action_group(action_group_name, Some(&group));
-
-    (mqtt_version_state.upcast(), qos_state.upcast())
+    qos_state.upcast()
 }

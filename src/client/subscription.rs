@@ -12,25 +12,20 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-using Gtk 4.0;
-using Adw 1;
 
-template $MQTTySubscriptionsView: Adw.Bin {
-  Adw.NavigationSplitView nav_split_view {
-    show-content: false;
-    collapsed: true;
+use crate::client::MQTTyClientQos;
 
-    sidebar: $MQTTySubscriptionsConnections connections {
-      model: bind template.model;
-      row-activated => $connection_activated() swapped;
-    };
+#[derive(Default, Clone)]
+pub struct MQTTyClientSubscription {
+    /// May contain wildcards
+    pub topic_filter: String,
 
-    // Connection overview, shows the subscriptions for a specific connection, and some
-    // related utility buttons
+    pub qos: MQTTyClientQos,
+
+    pub subscribed: bool,
+    // TODO: For now, we are only supporting MQTT v3.x subscriptions, because
+    // the v5 spec is too hard to understand :(
     //
-    // The property is being setted when any connection inside of MQTTySubscriptionsConnections
-    // sidebar is being clicked by the user
-    //
-    // content: ...;
-  }
+    // This struct is missing all of the other options available for a MQTT v5
+    // subscription
 }
