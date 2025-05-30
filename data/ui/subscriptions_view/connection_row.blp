@@ -15,22 +15,53 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $MQTTySubscriptionsView: Adw.Bin {
-  Adw.NavigationSplitView nav_split_view {
-    show-content: false;
-    collapsed: true;
+template $MQTTySubscriptionsConnectionRow: Adw.ActionRow {
+  activatable: true;
+  selectable: false;
 
-    sidebar: $MQTTySubscriptionsConnections connections {
-      model: bind template.model;
-      row-activated => $connection_activated() swapped;
-    };
+  [prefix]
+  Box indicator {
+    styles [
+      "indicator",
+      "circular",
+    ]
 
-    // Connection overview, shows the subscriptions for a specific connection, and some
-    // related utility buttons
-    //
-    // The property is being setted when any connection inside of MQTTySubscriptionsConnections
-    // sidebar is being clicked by the user
-    //
-    // content: ...;
+    valign: center;
+  }
+
+  [suffix]
+  Adw.Spinner spinner {
+    valign: center;
+    opacity: 0;
+  }
+
+  [suffix]
+  Switch switcher {
+    valign: center;
+    active: bind template.connected bidirectional;
+  }
+
+  [suffix]
+  MenuButton {
+    styles [
+      "flat",
+      "rounded",
+    ]
+
+    valign: center;
+    icon-name: "view-more-symbolic";
+    menu-model: row_menu;
+  }
+}
+
+menu row_menu {
+  item {
+    label: _("Edit");
+    action: "connection-row.edit";
+  }
+
+  item {
+    label: _("Delete");
+    action: "connection-row.delete";
   }
 }

@@ -13,9 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod subscriptions_row;
+mod connection_dialog;
+mod connection_row;
+mod subscriptions_connections;
 
-pub use subscriptions_row::MQTTySubscriptionsRow;
+pub use connection_dialog::MQTTySubscriptionsConnectionDialog;
+pub use connection_row::MQTTySubscriptionsConnectionRow;
+pub use subscriptions_connections::MQTTySubscriptionsConnections;
 
 use std::cell::OnceCell;
 
@@ -23,22 +27,24 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::{gio, glib};
 
-use crate::client::MQTTyClient;
+use crate::{application::MQTTyApplication, client::MQTTyClientSubscriptionsData};
 
 mod imp {
 
     use super::*;
 
-    #[derive(Default, gtk::CompositeTemplate)]
+    #[derive(Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/subscriptions_view/subscriptions_view.ui")]
+    #[properties(wrapper_type = super::MQTTySubscriptionsView)]
     pub struct MQTTySubscriptionsView {
+        #[property(get = Self::model)]
         model: OnceCell<gio::ListStore>,
 
         #[template_child]
-        stack: TemplateChild<gtk::Stack>,
+        nav_split_view: TemplateChild<adw::NavigationSplitView>,
 
         #[template_child]
-        pub list_box: TemplateChild<gtk::ListBox>,
+        connections: TemplateChild<MQTTySubscriptionsConnections>,
     }
 
     #[glib::object_subclass]
@@ -51,6 +57,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
+            klass.bind_template_callbacks();
         }
 
         fn instance_init(obj: &glib::subclass::types::InitializingObject<Self>) {
@@ -58,60 +65,23 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for MQTTySubscriptionsView {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            let model = self.model();
-
-            let stack = &self.stack;
-
-            model.connect_notify_local(
-                Some("n-items"),
-                glib::clone!(
-                    #[weak]
-                    stack,
-                    move |model, _| {
-                        stack.set_visible_child_name(if model.n_items() != 0 {
-                            "subscriptions"
-                        } else {
-                            "no-subscriptions"
-                        });
-                    }
-                ),
-            );
-
-            self.list_box.connect_row_activated(|list_box, row| {
-                // TODO: Show the bottom sheet with extra options like deleting
-                // the subscription, and of course, all of the messages listed
-                // for this subscription
-            });
-
-            self.list_box.bind_model(Some(model), |o| {
-                let client = o.downcast_ref::<MQTTyClient>().unwrap();
-                let row = MQTTySubscriptionsRow::new();
-                row.add_css_class("subscriptions-row");
-                row.set_prefix_widget(
-                    gtk::Box::builder()
-                        .css_classes(["success", "indicator", "circular"])
-                        .valign(gtk::Align::Center)
-                        .build(),
-                );
-                // TODO
-                // row.set_title(...);
-                // row.set_subtitle(...);
-                row.upcast()
-            });
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MQTTySubscriptionsView {}
     impl WidgetImpl for MQTTySubscriptionsView {}
     impl BinImpl for MQTTySubscriptionsView {}
 
     impl MQTTySubscriptionsView {
-        pub fn model(&self) -> &gio::ListStore {
+        fn model(&self) -> gio::ListStore {
             self.model
-                .get_or_init(|| gio::ListStore::new::<MQTTyClient>())
+                .get_or_init(|| gio::ListStore::new::<MQTTyClientSubscriptionsData>())
+                .clone()
         }
+    }
+
+    #[gtk::template_callbacks]
+    impl MQTTySubscriptionsView {
+        #[template_callback]
+        fn connection_activated(&self, row: &MQTTySubscriptionsConnectionRow) {}
     }
 }
 
@@ -122,21 +92,25 @@ glib::wrapper! {
 }
 
 impl MQTTySubscriptionsView {
-    pub fn new_subscription(&self) {
-        let imp = self.imp();
-        let model = imp.model();
-        model.append(&MQTTyClient::default());
-        let list_box = &*imp.list_box;
-        list_box
-            .row_at_index((model.n_items() - 1) as i32)
-            .unwrap()
-            .downcast::<MQTTySubscriptionsRow>()
-            .unwrap()
-            .set_editing(true);
+    pub async fn new_connection(&self) {
+        let dialog = MQTTySubscriptionsConnectionDialog::new();
+        let app = MQTTyApplication::get_singleton();
+        let window = app.active_window().unwrap();
+        let Some(conn) = dialog.choose_future(&window).await else {
+            return;
+        };
+
+        let data = MQTTyClientSubscriptionsData::new();
+
+        data.set_connection(&conn);
+
+        let model = self.model();
+
+        model.append(&data);
     }
 
-    pub fn set_entries(&self, entries: &[MQTTyClient]) {
-        let model = self.imp().model();
-        model.splice(0, model.n_items(), entries);
-    }
+    // pub fn set_entries(&self, entries: &[MQTTyClient]) {
+    //     let model = self.imp().model();
+    //     model.splice(0, model.n_items(), entries);
+    // }
 }

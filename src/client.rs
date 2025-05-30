@@ -13,9 +13,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+mod connection;
 mod message;
+mod subscription;
+mod subscriptions_data;
 
+pub use connection::MQTTyClientConnection;
 pub use message::MQTTyClientMessage;
+pub use subscription::MQTTyClientSubscription;
+pub use subscriptions_data::MQTTyClientSubscriptionsData;
 
 use std::cell::{Cell, OnceCell, RefCell};
 use std::sync::LazyLock;
@@ -49,17 +55,23 @@ mod imp {
     #[derive(Default, glib::Properties)]
     #[properties(wrapper_type = super::MQTTyClient)]
     pub struct MQTTyClient {
+        #[property(get, construct_only, nullable)]
+        client_id: RefCell<Option<String>>,
+
         #[property(get, construct_only)]
         url: RefCell<String>,
 
         #[property(get, construct_only, builder(MQTTyClientVersion::V3X))]
         mqtt_version: Cell<MQTTyClientVersion>,
 
-        #[property(get, construct_only)]
-        username: RefCell<String>,
+        #[property(get, construct_only, nullable)]
+        username: RefCell<Option<String>>,
+
+        #[property(get, construct_only, nullable)]
+        password: RefCell<Option<String>>,
 
         #[property(get, construct_only)]
-        password: RefCell<String>,
+        clean_start: Cell<bool>,
 
         client: OnceCell<paho::AsyncClient>,
     }
@@ -80,10 +92,15 @@ mod imp {
 
             let obj = self.obj();
 
-            let client = match paho::CreateOptionsBuilder::new()
-                .server_uri(obj.url())
-                .create_client()
-            {
+            let client = paho::CreateOptionsBuilder::new().server_uri(obj.url());
+
+            let client = if let Some(client_id) = obj.client_id() {
+                client.client_id(client_id)
+            } else {
+                client
+            };
+
+            let client = match client.create_client() {
                 Err(e) => panic!("CLIENT CREATION ERROR {:?}", e),
                 Ok(c) => c,
             };
@@ -148,14 +165,32 @@ mod imp {
 
             let obj = self.obj();
 
+            let mqtt_version = obj.mqtt_version();
+
+            let mut opts = paho::ConnectOptionsBuilder::with_mqtt_version(mqtt_version);
+            let mut mut_opts = opts.ssl_options(Default::default());
+
+            mut_opts = if let Some(username) = obj.username() {
+                mut_opts.user_name(username)
+            } else {
+                mut_opts
+            };
+
+            mut_opts = if let Some(password) = obj.password() {
+                mut_opts.password(password)
+            } else {
+                mut_opts
+            };
+
+            let mut opts = mut_opts.finalize();
+
+            let clean_start = obj.clean_start();
+
+            opts.set_clean_start(clean_start);
+            opts.set_clean_session(clean_start);
+
             client
-                .connect(Some(
-                    paho::ConnectOptionsBuilder::with_mqtt_version(obj.mqtt_version())
-                        .user_name(obj.username())
-                        .password(obj.password())
-                        .ssl_options(Default::default())
-                        .finalize(),
-                ))
+                .connect(Some(opts))
                 .await
                 .map(|res| println!("CONNECTION SERVER RESPONSE: {res:?}"))
                 .map_err(|e| e.to_string())
@@ -199,19 +234,58 @@ glib::wrapper! {
     pub struct MQTTyClient(ObjectSubclass<imp::MQTTyClient>);
 }
 
+pub struct MQTTyClientBuilder {
+    inner: glib::object::ObjectBuilder<'static, MQTTyClient>,
+}
+
+impl MQTTyClientBuilder {
+    pub fn build(self) -> MQTTyClient {
+        self.inner.build()
+    }
+
+    pub fn url(self, url: &str) -> Self {
+        Self {
+            inner: self.inner.property("url", url),
+        }
+    }
+
+    pub fn mqtt_version(self, mqtt_version: MQTTyClientVersion) -> Self {
+        Self {
+            inner: self.inner.property("mqtt_version", mqtt_version),
+        }
+    }
+
+    pub fn username(self, username: &str) -> Self {
+        Self {
+            inner: self.inner.property("username", username),
+        }
+    }
+
+    pub fn password(self, password: &str) -> Self {
+        Self {
+            inner: self.inner.property("password", password),
+        }
+    }
+
+    pub fn clean_start(self, clean_start: bool) -> Self {
+        Self {
+            inner: self.inner.property("clean_start", clean_start),
+        }
+    }
+
+    pub fn client_id(self, client_id: &str) -> Self {
+        Self {
+            inner: self.inner.property("client_id", client_id),
+        }
+    }
+}
+
 impl MQTTyClient {
-    pub fn new(
-        url: &str,
-        mqtt_version: MQTTyClientVersion,
-        username: &str,
-        password: &str,
-    ) -> Self {
-        glib::Object::builder()
-            .property("url", url)
-            .property("mqtt_version", mqtt_version)
-            .property("username", username)
-            .property("password", password)
-            .build()
+    #[must_use]
+    pub fn builder() -> MQTTyClientBuilder {
+        MQTTyClientBuilder {
+            inner: glib::Object::builder(),
+        }
     }
 
     pub async fn connect_client(&self) -> Result<(), String> {
@@ -239,12 +313,6 @@ impl MQTTyClient {
             false,
             glib::closure_local!(move |o: &Self, msg: &MQTTyClientMessage| cb(o, msg)),
         )
-    }
-}
-
-impl Default for MQTTyClient {
-    fn default() -> Self {
-        Self::new("", Default::default(), "", "")
     }
 }
 
