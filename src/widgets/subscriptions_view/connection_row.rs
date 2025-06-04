@@ -31,8 +31,11 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/subscriptions_view/connection_row.ui")]
     #[properties(wrapper_type = super::MQTTySubscriptionsConnectionRow)]
     pub struct MQTTySubscriptionsConnectionRow {
-        #[property(get, set)]
+        #[property(get, construct_only)]
         client: OnceCell<MQTTyClient>,
+
+        #[property(get, construct_only)]
+        data: OnceCell<MQTTyClientSubscriptionsData>,
 
         #[property(get, set)]
         indicator_state: RefCell<String>,
@@ -96,6 +99,77 @@ mod imp {
                     *last_indicator_state.borrow_mut() = Some(current_state);
                 }
             ));
+
+            let switcher = &self.switcher;
+            let spinner = &self.spinner;
+
+            obj.connect_connected_notify(glib::clone!(
+                #[weak]
+                switcher,
+                #[weak]
+                spinner,
+                move |obj| {
+                    // We query the focus before setting its sensitive prop to false
+                    let switcher_has_focus = switcher.has_focus();
+
+                    switcher.set_sensitive(false);
+                    spinner.set_opacity(1.0);
+
+                    if switcher_has_focus {
+                        obj.grab_focus();
+                    }
+
+                    let connected = obj.connected();
+                    let client = obj.client();
+                    let data = obj.data();
+                    let subs = data.subscriptions();
+
+                    glib::spawn_future_local(glib::clone!(
+                        #[weak]
+                        obj,
+                        async move {
+                            async move {
+                                if !connected {
+                                    let _ = client.disconnect_client().await;
+                                    obj.set_indicator_state("disabled");
+                                    obj.set_tooltip_text(None);
+                                    return;
+                                }
+
+                                futures::future::join_all(
+                                    subs.iter()
+                                        .filter(|sub| sub.subscribed)
+                                        .map(|sub| client.subscribe(&sub.topic_filter, sub.qos)),
+                                )
+                                .await
+                                .into_iter()
+                                .filter(|res| res.is_err())
+                                .for_each(|res| {
+                                    println!("Error while subscribing: {}", res.err().unwrap())
+                                });
+
+                                match client.connect_client().await {
+                                    Ok(_) => {
+                                        obj.set_indicator_state("success");
+                                        obj.set_tooltip_text(None);
+                                    }
+                                    Err(e) => {
+                                        obj.set_indicator_state("error");
+                                        obj.set_tooltip_text(Some(&format!(
+                                            "There was an error while connecting: {}",
+                                            e
+                                        )));
+                                    }
+                                };
+                            }
+                            .await;
+
+                            spinner.set_opacity(0.0);
+                            switcher.set_sensitive(true);
+                        }
+                    ));
+                }
+            ));
         }
 
         fn signals() -> &'static [Signal] {
@@ -121,10 +195,27 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
-impl From<MQTTyClientSubscriptionsData> for MQTTySubscriptionsConnectionRow {
-    fn from(value: MQTTyClientSubscriptionsData) -> Self {
+impl MQTTySubscriptionsConnectionRow {
+    pub fn connect_delete_request(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "delete-request",
+            false,
+            glib::closure_local!(|o: &Self| cb(o)),
+        )
+    }
+
+    pub fn connect_edit_request(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "edit-request",
+            false,
+            glib::closure_local!(|o: &Self| cb(o)),
+        )
+    }
+}
+
+impl From<&MQTTyClientSubscriptionsData> for MQTTySubscriptionsConnectionRow {
+    fn from(value: &MQTTyClientSubscriptionsData) -> Self {
         let conn = value.connection();
-        let subs = value.subscriptions();
 
         let client = MQTTyClient::builder()
             .clean_start(conn.clean_start)
@@ -150,37 +241,13 @@ impl From<MQTTyClientSubscriptionsData> for MQTTySubscriptionsConnectionRow {
 
         let client = client.build();
 
-        let row: Self = glib::Object::builder()
+        glib::Object::builder()
             .property("client", &client)
             .property("title", &conn.name)
             .property("subtitle", &conn.url)
             .property("connected", conn.connected)
             .property("indicator_state", "disabled")
-            .build();
-
-        glib::spawn_future_local(glib::clone!(
-            #[weak]
-            client,
-            #[weak]
-            row,
-            async move {
-                futures::future::join_all(
-                    subs.iter()
-                        .filter(|sub| sub.subscribed)
-                        .map(|sub| client.subscribe(&sub.topic_filter, sub.qos)),
-                )
-                .await
-                .into_iter()
-                .filter(|res| res.is_err())
-                .for_each(|res| println!("Error while subscribing: {}", res.err().unwrap()));
-
-                if conn.connected {
-                    client.connect_client().await.unwrap();
-                    row.set_indicator_state("success");
-                }
-            }
-        ));
-
-        row
+            .property("data", value)
+            .build()
     }
 }
