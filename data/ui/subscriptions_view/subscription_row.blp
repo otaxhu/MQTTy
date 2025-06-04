@@ -12,9 +12,40 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+using Adw 1;
 
-@use 'indicator';
+template $MQTTySubscriptionRow: Adw.ActionRow {
+  activatable: true;
+  selectable: false;
 
-:root.accent-color-system-unsupported {
-  --accent-bg-color: var(--accent-purple);
+  [suffix]
+  Switch {
+    valign: center;
+    active: bind template.subscribed bidirectional;
+  }
+
+  [suffix]
+  MenuButton {
+    styles [
+      "flat",
+      "rounded",
+    ]
+
+    valign: center;
+    icon-name: "view-more-symbolic";
+    menu-model: row_menu;
+  }
+}
+
+menu row_menu {
+  item {
+    label: _("Edit");
+    action: "subscription-row.edit";
+  }
+
+  item {
+    label: _("Delete");
+    action: "subscription-row.delete";
+  }
 }

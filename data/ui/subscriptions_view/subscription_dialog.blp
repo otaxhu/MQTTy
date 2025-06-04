@@ -1,0 +1,69 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTySubscriptionDialog: Adw.AlertDialog {
+  extra-child: Adw.PreferencesGroup {
+    Adw.EntryRow topic_row {
+      // Translators: This string uses Pango markup, you should translate it following the Pango syntax, you may translate the asterisk and possibly edit the Pango atrributes or add new Pango tags/attributes, DO NOT change the asterisks red color
+      title: _("Topic filter <span foreground='#FF0000' weight='bold'>*</span>");
+      use-markup: true;
+      text: bind template.topic bidirectional;
+    }
+
+    Adw.ActionRow {
+      title: C_("mqtt-qos-abbreviation", "QoS");
+      subtitle: _("Quality of service");
+
+      [suffix]
+      Box {
+        valign: center;
+
+        CheckButton qos_0_button {
+          label: _("0");
+          action-name: "subscription-dialog.qos";
+          action-target: "'qos_0'";
+        }
+
+        CheckButton qos_1_button {
+          label: _("1");
+          action-name: "subscription-dialog.qos";
+          action-target: "'qos_1'";
+          group: qos_0_button;
+        }
+
+        CheckButton qos_2_button {
+          label: _("2");
+          action-name: "subscription-dialog.qos";
+          action-target: "'qos_2'";
+          group: qos_0_button;
+        }
+      }
+    }
+
+    Adw.SwitchRow {
+      title: _("Start subscribed");
+      active: bind template.subscribed bidirectional;
+    }
+  };
+
+  default-response: "save";
+
+  responses [
+    save: _("Save") suggested disabled,
+    cancel: _("Cancel"),
+  ]
+}

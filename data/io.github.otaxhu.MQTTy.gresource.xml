@@ -21,7 +21,9 @@
 
     <!-- Subscriptions view related -->
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscriptions_view.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscriptions_connections.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscriptions_overview.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscription_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscription_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/connection_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/connection_dialog.ui</file>
 

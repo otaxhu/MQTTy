@@ -34,5 +34,6 @@ pub use publish_view::{
 };
 pub use source_view::MQTTySourceView;
 pub use subscriptions_view::{
-    MQTTySubscriptionsConnectionRow, MQTTySubscriptionsConnections, MQTTySubscriptionsView,
+    MQTTySubscriptionDialog, MQTTySubscriptionRow, MQTTySubscriptionsConnectionDialog,
+    MQTTySubscriptionsConnectionRow, MQTTySubscriptionsOverview, MQTTySubscriptionsView,
 };

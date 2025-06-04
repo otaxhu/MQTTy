@@ -70,6 +70,10 @@ mod imp {
                 obj.add_css_class("devel");
             }
 
+            if !adw::StyleManager::default().is_system_supports_accent_colors() {
+                obj.add_css_class("accent-color-system-unsupported");
+            }
+
             // Load latest window state
             obj.load_window_size();
 
