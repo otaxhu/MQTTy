@@ -28,6 +28,7 @@ use std::sync::LazyLock;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::glib;
 use gtk::glib::subclass::Signal;
 
@@ -46,6 +47,16 @@ pub enum MQTTyClientQos {
     Qos0,
     Qos1,
     Qos2,
+}
+
+impl MQTTyClientQos {
+    pub fn translated(&self) -> String {
+        match self {
+            MQTTyClientQos::Qos0 => gettext("QoS 0"),
+            MQTTyClientQos::Qos1 => gettext("QoS 1"),
+            MQTTyClientQos::Qos2 => gettext("QoS 2"),
+        }
+    }
 }
 
 mod imp {
@@ -109,7 +120,9 @@ mod imp {
             let (message_tx, message_rx) = async_channel::bounded(1);
 
             client.set_message_callback(move |_, msg| {
-                let msg = msg.unwrap();
+                let Some(msg) = msg else {
+                    return;
+                };
                 let _ = message_tx.send_blocking(msg);
             });
 

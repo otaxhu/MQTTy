@@ -17,9 +17,10 @@ use adw::subclass::prelude::*;
 use gtk::glib;
 use gtk::glib::gobject_ffi;
 
-#[derive(Copy, Clone, glib::Enum)]
+#[derive(Default, Copy, Clone, glib::Enum, PartialEq)]
 #[enum_type(name = "MQTTyDisplayMode")]
 pub enum MQTTyDisplayMode {
+    #[default]
     #[enum_value(nick = "desktop")]
     Desktop,
     #[enum_value(nick = "mobile")]
