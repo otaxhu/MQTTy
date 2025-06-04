@@ -20,10 +20,11 @@ template $MQTTyWindow: Adw.ApplicationWindow {
   height-request: 400;
 
   Adw.Breakpoint {
-    condition ("max-width: 600sp")
+    condition ("max-width: 700sp")
 
     setters {
       publish_view.display_mode: mobile;
+      subscriptions_view.display_mode: mobile;
     }
   }
 
@@ -61,7 +62,9 @@ template $MQTTyWindow: Adw.ApplicationWindow {
           name: "subscriptions";
           icon-name: "chat-bubbles-empty-symbolic";
 
-          child: $MQTTySubscriptionsView subscriptions_view {};
+          child: $MQTTySubscriptionsView subscriptions_view {
+            display_mode: desktop;
+          };
         }
       }
     };

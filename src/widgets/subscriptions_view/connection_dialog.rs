@@ -123,6 +123,19 @@ impl MQTTySubscriptionsConnectionDialog {
             .build()
     }
 
+    pub fn new_edit(conn: &MQTTyClientConnection) -> Self {
+        glib::Object::builder()
+            .property("heading", gettext("Edit connection"))
+            .property("name", &conn.name)
+            .property("client-id", conn.client_id.as_ref())
+            .property("url", &conn.url)
+            .property("username", conn.username.as_ref())
+            .property("password", conn.password.as_ref())
+            .property("clean-start", conn.clean_start)
+            .property("connected", conn.connected)
+            .build()
+    }
+
     /// Returns an already validated MQTTyClientConnection struct, or None if
     /// "cancel" or "close" were the options selected
     pub async fn choose_future(

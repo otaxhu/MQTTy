@@ -90,3 +90,32 @@ pub fn connect_qos_action(
 
     qos_state.upcast()
 }
+
+/// Important:
+///
+/// libadwaita must be initialized before calling this function
+pub fn get_accent_color_as_hex() -> &'static str {
+    let man = adw::StyleManager::default();
+
+    let color = if man.is_system_supports_accent_colors() {
+        man.accent_color()
+    } else {
+        // Pretty nice looking color to use as fallback, it also mostly matches the MQTT
+        // branding colors
+        adw::AccentColor::Purple
+    };
+
+    // See: https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1-latest/enum.AccentColor.html
+    match color {
+        adw::AccentColor::Blue => "#3584e4",
+        adw::AccentColor::Teal => "#2190a4",
+        adw::AccentColor::Green => "#3a944a",
+        adw::AccentColor::Yellow => "#c88800",
+        adw::AccentColor::Orange => "#ed5b00",
+        adw::AccentColor::Red => "#e62d42",
+        adw::AccentColor::Pink => "#d56199",
+        adw::AccentColor::Purple => "#9141ac",
+        adw::AccentColor::Slate => "#6f8396",
+        c => panic!("Invalid color: {c:?}"),
+    }
+}
