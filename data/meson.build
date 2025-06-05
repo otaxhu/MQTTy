@@ -30,6 +30,7 @@ blueprint_files = [
   'ui/publish_view/publish_auth_tab.blp',
   'ui/subscriptions_view/subscriptions_view.blp',
   'ui/subscriptions_view/subscriptions_overview.blp',
+  'ui/subscriptions_view/subscription_messages.blp',
   'ui/subscriptions_view/subscription_row.blp',
   'ui/subscriptions_view/subscription_dialog.blp',
   'ui/subscriptions_view/connection_row.blp',
