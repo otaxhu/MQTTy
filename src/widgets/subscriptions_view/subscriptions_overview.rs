@@ -21,7 +21,7 @@ use gtk::glib;
 
 use crate::application::MQTTyApplication;
 use crate::client::{MQTTyClientSubscription, MQTTyClientSubscriptionsData};
-use crate::widgets::{MQTTySubscriptionDialog, MQTTySubscriptionRow};
+use crate::widgets::{MQTTySubscriptionDialog, MQTTySubscriptionMessages, MQTTySubscriptionRow};
 
 mod imp {
 
@@ -44,6 +44,9 @@ mod imp {
 
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
+
+        #[template_child]
+        bottom_sheet: TemplateChild<adw::BottomSheet>,
     }
 
     #[glib::object_subclass]
@@ -108,7 +111,12 @@ mod imp {
         }
 
         #[template_callback]
-        fn on_subscription_activated(&self, row: &MQTTySubscriptionRow) {}
+        fn on_subscription_activated(&self, row: &MQTTySubscriptionRow) {
+            let bottom_sheet = &self.bottom_sheet;
+
+            bottom_sheet.set_sheet(Some(&MQTTySubscriptionMessages::new()));
+            bottom_sheet.set_open(true);
+        }
     }
 
     impl MQTTySubscriptionsOverview {
