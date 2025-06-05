@@ -1,0 +1,39 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $MQTTySubscriptionMessages: Adw.Bin {
+  ScrolledWindow {
+    propagate-natural-height: true;
+
+    Stack {
+      StackPage {
+        name: "no-messages";
+
+        child: Adw.StatusPage {
+          icon-name: "chat-none-symbolic";
+          title: _("Messages");
+          description: _("There is no messages");
+        };
+      }
+
+      StackPage {
+        name: "messages";
+
+        child: Adw.Clamp {
+          ListBox list_box {
+            styles [
+              "boxed-list-separate",
+            ]
+
+            margin-top: 16;
+            margin-bottom: 16;
+            margin-start: 16;
+            margin-end: 16;
+            selection-mode: none;
+            valign: start;
+          }
+        };
+      }
+    }
+  }
+}

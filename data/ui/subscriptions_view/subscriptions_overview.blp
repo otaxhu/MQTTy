@@ -18,77 +18,73 @@ using Adw 1;
 template $MQTTySubscriptionsOverview: Adw.NavigationPage {
   title: _("Subscriptions");
 
-  Adw.NavigationView {
-    Adw.NavigationPage {
-      title: bind template.title;
+  Adw.BottomSheet bottom_sheet {
+    content: Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {
+        decoration-layout: "";
 
-      child: Adw.ToolbarView {
-        [top]
-        Adw.HeaderBar {
-          decoration-layout: "";
+        title-widget: Adw.WindowTitle {
+          title: bind template.title;
+          subtitle: bind template.subtitle;
+        };
 
-          title-widget: Adw.WindowTitle {
-            title: bind template.title;
-            subtitle: bind template.subtitle;
-          };
-
-          [end]
-          Button {
-            icon-name: "tab-new-symbolic";
-            clicked => $on_new_subscription() swapped;
-          }
+        [end]
+        Button {
+          icon-name: "tab-new-symbolic";
+          clicked => $on_new_subscription() swapped;
         }
+      }
 
-        content: Stack stack {
-          StackPage {
-            name: "no-subscriptions";
+      content: Stack stack {
+        StackPage {
+          name: "no-subscriptions";
 
-            child: Adw.StatusPage {
-              title: _("Subscriptions");
-              description: _("It seems that you don't have any subscriptions active");
-              icon-name: "chat-bubbles-empty-symbolic";
+          child: Adw.StatusPage {
+            title: _("Subscriptions");
+            description: _("It seems that you don't have any subscriptions active");
+            icon-name: "chat-bubbles-empty-symbolic";
 
-              child: Adw.Clamp {
-                Button {
-                  styles [
-                    "pill",
-                    "suggested-action",
-                  ]
+            child: Adw.Clamp {
+              Button {
+                styles [
+                  "pill",
+                  "suggested-action",
+                ]
 
-                  clicked => $on_new_subscription() swapped;
+                clicked => $on_new_subscription() swapped;
 
-                  Adw.ButtonContent {
-                    label: _("New subscription");
-                    icon-name: "tab-new-symbolic";
-                  }
-                }
-              };
-            };
-          }
-
-          StackPage {
-            name: "subscriptions";
-
-            child: ScrolledWindow {
-              Adw.Clamp {
-                ListBox list_box {
-                  styles [
-                    "boxed-list-separate",
-                  ]
-
-                  margin-top: 16;
-                  margin-bottom: 16;
-                  margin-start: 16;
-                  margin-end: 16;
-                  selection-mode: none;
-                  valign: start;
-                  row-activated => $on_subscription_activated() swapped;
+                Adw.ButtonContent {
+                  label: _("New subscription");
+                  icon-name: "tab-new-symbolic";
                 }
               }
             };
-          }
-        };
+          };
+        }
+
+        StackPage {
+          name: "subscriptions";
+
+          child: ScrolledWindow {
+            Adw.Clamp {
+              ListBox list_box {
+                styles [
+                  "boxed-list",
+                ]
+
+                margin-top: 16;
+                margin-bottom: 16;
+                margin-start: 16;
+                margin-end: 16;
+                selection-mode: none;
+                valign: start;
+                row-activated => $on_subscription_activated() swapped;
+              }
+            }
+          };
+        }
       };
-    }
+    };
   }
 }
