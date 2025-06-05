@@ -16,12 +16,14 @@
 mod connection_dialog;
 mod connection_row;
 mod subscription_dialog;
+mod subscription_messages;
 mod subscription_row;
 mod subscriptions_overview;
 
 pub use connection_dialog::MQTTySubscriptionsConnectionDialog;
 pub use connection_row::MQTTySubscriptionsConnectionRow;
 pub use subscription_dialog::MQTTySubscriptionDialog;
+pub use subscription_messages::MQTTySubscriptionMessages;
 pub use subscription_row::MQTTySubscriptionRow;
 pub use subscriptions_overview::MQTTySubscriptionsOverview;
 
