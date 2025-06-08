@@ -27,7 +27,8 @@ pub use subscription_messages::MQTTySubscriptionMessages;
 pub use subscription_row::MQTTySubscriptionRow;
 pub use subscriptions_overview::MQTTySubscriptionsOverview;
 
-use std::cell::{Cell, OnceCell};
+use std::cell::{Cell, OnceCell, RefCell};
+use std::collections::HashMap;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -46,6 +47,9 @@ mod imp {
     #[properties(wrapper_type = super::MQTTySubscriptionsView)]
     pub struct MQTTySubscriptionsView {
         model: OnceCell<gio::ListStore>,
+
+        data_overview_map:
+            RefCell<HashMap<MQTTyClientSubscriptionsData, MQTTySubscriptionsOverview>>,
 
         #[property(get, set, builder(Default::default()))]
         display_mode: Cell<MQTTyDisplayMode>,
@@ -182,12 +186,16 @@ mod imp {
             row.connect_delete_request(glib::clone!(
                 #[weak(rename_to = this)]
                 self,
+                #[weak]
+                data,
                 move |row| {
                     let model = this.model();
 
                     if row.is_selected() {
                         this.nav_split_view.set_show_content(false);
                     }
+
+                    this.data_overview_map.borrow_mut().remove(&data).unwrap();
 
                     model.remove(row.index() as u32);
                 }
@@ -221,6 +229,8 @@ mod imp {
                                 this.nav_split_view.set_show_content(false);
                             }
 
+                            this.data_overview_map.borrow_mut().remove(&data).unwrap();
+
                             model.splice(row.index() as u32, 1, &[new_data]);
                         }
                     ));
@@ -247,7 +257,12 @@ mod imp {
             list_box.unselect_all();
             row.set_selectable(true);
             list_box.select_row(Some(row));
-            nav_split_view.set_content(Some(&MQTTySubscriptionsOverview::from(row.data())));
+            let mut map = self.data_overview_map.borrow_mut();
+            let overview = map
+                .entry(row.data())
+                .or_insert_with_key(|data| MQTTySubscriptionsOverview::from(data));
+
+            nav_split_view.set_content(Some(overview));
             nav_split_view.set_show_content(true);
         }
     }

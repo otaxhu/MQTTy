@@ -1,0 +1,4 @@
+[env]
+# TODO: Remove this when this issue gets fixed:
+# https://github.com/eclipse-paho/paho.mqtt.rust/issues/251
+CFLAGS = "-std=c99"
