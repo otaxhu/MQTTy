@@ -194,8 +194,8 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
-impl From<MQTTyClientSubscriptionsData> for MQTTySubscriptionsOverview {
-    fn from(value: MQTTyClientSubscriptionsData) -> Self {
+impl From<&MQTTyClientSubscriptionsData> for MQTTySubscriptionsOverview {
+    fn from(value: &MQTTyClientSubscriptionsData) -> Self {
         glib::Object::builder()
             .property("subtitle", value.connection().name)
             .property("data", value)
