@@ -29,6 +29,7 @@ pub use subscriptions_overview::MQTTySubscriptionsOverview;
 
 use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -37,6 +38,19 @@ use gtk::{gio, glib};
 use crate::application::MQTTyApplication;
 use crate::client::MQTTyClientSubscriptionsData;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface, MQTTyDisplayModeIfaceImpl};
+
+fn handle_gesture_claim_event(ev: &gtk::GestureSingle, picked: &gtk::Widget) {
+    // For now we are handling GtkButton s, maybe in the future subscriptions-view gets
+    // another widgets that needs to be added here, though any subclass of GtkButton will
+    // automatically be handled by this code :p
+
+    let is_button =
+        picked.is::<gtk::Button>() || picked.ancestor(gtk::Button::static_type()).is_some();
+
+    if !is_button || ev.current_button() == 3 || ev.downcast_ref::<gtk::GestureDrag>().is_some() {
+        ev.set_state(gtk::EventSequenceState::Claimed);
+    }
+}
 
 mod imp {
 
@@ -167,6 +181,48 @@ mod imp {
                     }
                 }
             ));
+
+            let click = gtk::GestureClick::new();
+            click.set_button(0);
+            click.set_propagation_phase(gtk::PropagationPhase::Capture);
+            click.connect_pressed(|click, n_presses, x, y| {
+                if n_presses > 1 {
+                    click.set_state(gtk::EventSequenceState::Claimed);
+                    return;
+                }
+
+                let picked = click
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+
+                handle_gesture_claim_event(click.upcast_ref(), &picked);
+            });
+
+            let drag = gtk::GestureDrag::new();
+            drag.set_propagation_phase(gtk::PropagationPhase::Capture);
+            drag.connect_drag_begin(|drag, x, y| {
+                let picked = drag
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+
+                let signal_id: Rc<RefCell<Option<glib::SignalHandlerId>>> = Default::default();
+
+                *signal_id.borrow_mut() = Some(drag.connect_drag_update(glib::clone!(
+                    #[strong]
+                    signal_id,
+                    move |drag, _x, _y| {
+                        drag.disconnect(signal_id.take().unwrap());
+                        handle_gesture_claim_event(drag.upcast_ref(), &picked);
+                    }
+                )));
+            });
+
+            self.header_bar.add_controller(click);
+            self.header_bar.add_controller(drag);
         }
     }
     impl WidgetImpl for MQTTySubscriptionsView {}
