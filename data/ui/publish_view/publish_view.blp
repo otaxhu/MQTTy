@@ -16,14 +16,9 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTyPublishView: Adw.Bin {
-  Box {
-    orientation: vertical;
-
-    Adw.TabBar {
-      styles [
-        "inline",
-      ]
-
+  Adw.ToolbarView {
+    [top]
+    Adw.TabBar tab_bar {
       autohide: false;
       view: tab_view;
 
@@ -52,7 +47,7 @@ template $MQTTyPublishView: Adw.Bin {
       };
     }
 
-    Stack stack {
+    content: Stack stack {
       vexpand: true;
 
       StackPage {
@@ -94,6 +89,6 @@ template $MQTTyPublishView: Adw.Bin {
           }
         };
       }
-    }
+    };
   }
 }
