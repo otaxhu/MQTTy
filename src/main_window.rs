@@ -52,6 +52,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
+            klass.bind_template_callbacks();
         }
 
         // You must call `Widget`'s `init_template()` within `instance_init()`.
@@ -247,6 +248,14 @@ mod imp {
 
     impl ApplicationWindowImpl for MQTTyWindow {}
     impl AdwApplicationWindowImpl for MQTTyWindow {}
+
+    #[gtk::template_callbacks]
+    impl MQTTyWindow {
+        #[template_callback]
+        fn cancel_event(ev: &gtk::Gesture) {
+            ev.set_state(gtk::EventSequenceState::Claimed);
+        }
+    }
 }
 
 glib::wrapper! {
