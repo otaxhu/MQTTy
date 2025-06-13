@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::cell::{OnceCell, RefCell};
+use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -22,6 +23,8 @@ use gtk::glib;
 use crate::application::MQTTyApplication;
 use crate::client::{MQTTyClientSubscription, MQTTyClientSubscriptionsData};
 use crate::widgets::{MQTTySubscriptionDialog, MQTTySubscriptionMessages, MQTTySubscriptionRow};
+
+use super::handle_gesture_claim_event;
 
 mod imp {
 
@@ -47,6 +50,9 @@ mod imp {
 
         #[template_child]
         bottom_sheet: TemplateChild<adw::BottomSheet>,
+
+        #[template_child]
+        header_bar: TemplateChild<adw::HeaderBar>,
     }
 
     #[glib::object_subclass]
@@ -71,6 +77,49 @@ mod imp {
     impl ObjectImpl for MQTTySubscriptionsOverview {
         fn constructed(&self) {
             self.update_list_box();
+
+            let click = gtk::GestureClick::new();
+            click.set_button(0);
+            click.set_propagation_phase(gtk::PropagationPhase::Capture);
+            click.connect_pressed(|click, n_presses, x, y| {
+                if n_presses > 1 {
+                    click.set_state(gtk::EventSequenceState::Claimed);
+                    return;
+                }
+
+                let picked = click
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+
+                handle_gesture_claim_event(click.upcast_ref(), &picked);
+            });
+
+            let drag = gtk::GestureDrag::new();
+            drag.set_propagation_phase(gtk::PropagationPhase::Capture);
+            drag.connect_drag_begin(|drag, x, y| {
+                let picked = drag
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+
+                let signal_id: Rc<RefCell<Option<glib::SignalHandlerId>>> = Default::default();
+
+                *signal_id.borrow_mut() = Some(drag.connect_drag_update(glib::clone!(
+                    #[strong]
+                    signal_id,
+                    move |drag, _x, _y| {
+                        drag.disconnect(signal_id.take().unwrap());
+
+                        handle_gesture_claim_event(drag.upcast_ref(), &picked);
+                    }
+                )));
+            });
+
+            self.header_bar.add_controller(click);
+            self.header_bar.add_controller(drag);
         }
     }
 

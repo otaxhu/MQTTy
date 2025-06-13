@@ -25,7 +25,8 @@ pub use publish_general_tab::MQTTyPublishGeneralTab;
 pub use publish_user_props_tab::MQTTyPublishUserPropsTab;
 pub use publish_view_notebook::MQTTyPublishViewNotebook;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -35,11 +36,27 @@ use gtk::glib;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::subclass::prelude::*;
 
+fn handle_gesture_claim_event(ev: &gtk::GestureSingle, picked: &gtk::Widget) {
+    let is_tab = glib::Type::from_name("AdwTab")
+        .map(|ty| picked.type_().is_a(ty) || picked.ancestor(ty).is_some())
+        .unwrap_or(false);
+
+    let is_button =
+        picked.is::<gtk::Button>() || picked.ancestor(gtk::Button::static_type()).is_some();
+
+    if (!is_tab && !is_button)
+        || (is_button
+            && (ev.current_button() == 3 || ev.downcast_ref::<gtk::GestureDrag>().is_some()))
+    {
+        ev.set_state(gtk::EventSequenceState::Claimed);
+    }
+}
+
 mod imp {
 
     use super::*;
 
-    #[derive(gtk::CompositeTemplate, glib::Properties)]
+    #[derive(Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/publish_view/publish_view.ui")]
     #[properties(wrapper_type = super::MQTTyPublishView)]
     pub struct MQTTyPublishView {
@@ -50,21 +67,13 @@ mod imp {
         pub tab_view: TemplateChild<adw::TabView>,
 
         #[template_child]
+        tab_bar: TemplateChild<adw::TabBar>,
+
+        #[template_child]
         stack: TemplateChild<gtk::Stack>,
 
         #[template_child]
         send_button: TemplateChild<gtk::Button>,
-    }
-
-    impl Default for MQTTyPublishView {
-        fn default() -> Self {
-            Self {
-                display_mode: Cell::new(MQTTyDisplayMode::Desktop),
-                tab_view: Default::default(),
-                stack: Default::default(),
-                send_button: Default::default(),
-            }
-        }
     }
 
     #[glib::object_subclass]
@@ -106,6 +115,50 @@ mod imp {
                     send_button.set_visible(n_pages != 0);
                 }
             ));
+
+            let click = gtk::GestureClick::new();
+            click.set_button(0);
+            click.connect_pressed(|click, n_presses, x, y| {
+                if n_presses > 1 {
+                    click.set_state(gtk::EventSequenceState::Claimed);
+                    return;
+                }
+                let picked = click
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+                handle_gesture_claim_event(
+                    click.upcast_ref(),
+                    &picked,
+                );
+            });
+
+            let drag = gtk::GestureDrag::new();
+            drag.connect_drag_begin(|drag, x, y| {
+                let picked = drag
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+
+                let signal_id: Rc<RefCell<Option<glib::SignalHandlerId>>> = Default::default();
+
+                *signal_id.borrow_mut() = Some(drag.connect_drag_update(glib::clone!(
+                    #[strong]
+                    signal_id,
+                    move |drag, _x, _y| {
+                        drag.disconnect(signal_id.take().unwrap());
+                        handle_gesture_claim_event(
+                            drag.upcast_ref(),
+                            &picked,
+                        );
+                    }
+                )));
+            });
+
+            self.tab_bar.add_controller(click);
+            self.tab_bar.add_controller(drag);
         }
     }
     impl WidgetImpl for MQTTyPublishView {}

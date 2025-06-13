@@ -31,6 +31,7 @@ template $MQTTyWindow: Adw.ApplicationWindow {
   [content]
   Adw.ToolbarView {
     top-bar-style: raised;
+    bottom-bar-style: raised;
 
     [top]
     Adw.HeaderBar {
@@ -71,6 +72,14 @@ template $MQTTyWindow: Adw.ApplicationWindow {
 
     [bottom]
     Adw.ViewSwitcherBar {
+      GestureClick {
+        // capture right click only, I really don't like how the menu that opens looks,
+        // but I still like the other gestures like moving the window or maximizing with
+        // double click
+        button: 3;
+        pressed => $cancel_event();
+      }
+
       stack: view_stack;
       reveal: true;
     }
