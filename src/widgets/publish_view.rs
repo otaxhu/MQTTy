@@ -128,10 +128,7 @@ mod imp {
                     .unwrap()
                     .pick(x, y, gtk::PickFlags::DEFAULT)
                     .unwrap();
-                handle_gesture_claim_event(
-                    click.upcast_ref(),
-                    &picked,
-                );
+                handle_gesture_claim_event(click.upcast_ref(), &picked);
             });
 
             let drag = gtk::GestureDrag::new();
@@ -149,10 +146,7 @@ mod imp {
                     signal_id,
                     move |drag, _x, _y| {
                         drag.disconnect(signal_id.take().unwrap());
-                        handle_gesture_claim_event(
-                            drag.upcast_ref(),
-                            &picked,
-                        );
+                        handle_gesture_claim_event(drag.upcast_ref(), &picked);
                     }
                 )));
             });

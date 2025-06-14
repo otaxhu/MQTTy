@@ -70,15 +70,15 @@ VERSION=$(meson introspect build --projectinfo | jq -r '.version')
 
 OUTDIR=$ROOT_DIR/build/MQTTy-$VERSION-win32-portable-x86_64
 
-rm -rf $OUTDIR
+rm -rf "$OUTDIR"
 
 # FIXME: Sometimes the command works, sometimes not,
 # It fails during Paho MQTT C library building, but if you try one or two
 # more tries it just works magically
 ninja -C build
-DESTDIR=$OUTDIR ninja -C build install
+DESTDIR="$OUTDIR" ninja -C build install
 
-cd $OUTDIR
+cd "$OUTDIR"
 
 mkdir -p lib share
 
@@ -126,7 +126,7 @@ glib-compile-schemas.exe share/glib-2.0/schemas
 gtk4-update-icon-cache.exe -t share/icons/hicolor
 
 # Copy legal files
-cp $ROOT_DIR/COPYING $ROOT_DIR/NOTICE .
+cp "$ROOT_DIR"/COPYING "$ROOT_DIR"/NOTICE .
 mv COPYING COPYING.txt
 mv NOTICE NOTICE.txt
 
@@ -156,10 +156,10 @@ To run MQTTy just execute the bin/MQTTy.exe file
 
   For technical users, MQTTy uses 'GSK_RENDERER=cairo' as the default value" > README.txt
 
-OUTFILE=$(basename $OUTDIR).zip
+OUTFILE=$(basename "$OUTDIR").zip
 
 cd ..
 
-rm -f $OUTFILE
+rm -f "$OUTFILE"
 
-zip -rq $OUTFILE $(basename $OUTDIR)
+zip -rq "$OUTFILE" $(basename "$OUTDIR")
