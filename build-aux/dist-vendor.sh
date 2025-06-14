@@ -6,7 +6,7 @@ export DIST="$1"
 export SOURCE_ROOT="$2"
 
 cd "$SOURCE_ROOT"
-mkdir "$DIST"/.cargo
+mkdir -p "$DIST"/.cargo
 
 cargo vendor > "$DIST"/.cargo/config.toml
 

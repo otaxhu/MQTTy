@@ -40,5 +40,8 @@
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/chat-none-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/agenda-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/build-alt-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/io.github.otaxhu.MQTTy.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/io.github.otaxhu.MQTTy.Devel.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/io.github.otaxhu.MQTTy-symbolic.svg</file>
   </gresource>
 </gresources>
