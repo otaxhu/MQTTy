@@ -66,8 +66,8 @@ mod imp {
     #[derive(Default, glib::Properties)]
     #[properties(wrapper_type = super::MQTTyClient)]
     pub struct MQTTyClient {
-        #[property(get, construct_only, nullable)]
-        client_id: RefCell<Option<String>>,
+        #[property(get, construct_only)]
+        client_id: RefCell<String>,
 
         #[property(get, construct_only)]
         url: RefCell<String>,
