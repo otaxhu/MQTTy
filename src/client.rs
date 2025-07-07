@@ -103,15 +103,11 @@ mod imp {
 
             let obj = self.obj();
 
-            let client = paho::CreateOptionsBuilder::new().server_uri(obj.url());
-
-            let client = if let Some(client_id) = obj.client_id() {
-                client.client_id(client_id)
-            } else {
-                client
-            };
-
-            let client = match client.create_client() {
+            let client = match paho::CreateOptionsBuilder::new()
+                .server_uri(obj.url())
+                .client_id(obj.client_id())
+                .create_client()
+            {
                 Err(e) => panic!("CLIENT CREATION ERROR {:?}", e),
                 Ok(c) => c,
             };

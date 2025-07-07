@@ -19,6 +19,8 @@ template $MQTTySubscriptionsOverview: Adw.NavigationPage {
   title: _("Subscriptions");
 
   Adw.BottomSheet bottom_sheet {
+    sheet: $MQTTySubscriptionMessages {};
+
     content: Adw.ToolbarView {
       [top]
       Adw.HeaderBar header_bar {
@@ -33,6 +35,19 @@ template $MQTTySubscriptionsOverview: Adw.NavigationPage {
         Button {
           icon-name: "tab-new-symbolic";
           clicked => $on_new_subscription() swapped;
+          tooltip-text: _("New subscription");
+        }
+
+        [end]
+        Separator {
+          orientation: vertical;
+        }
+
+        [end]
+        ToggleButton {
+          active: bind bottom_sheet.open bidirectional;
+          icon-name: "chat-bubble-empty-symbolic";
+          tooltip-text: _("Show messages");
         }
       }
 
@@ -79,7 +94,6 @@ template $MQTTySubscriptionsOverview: Adw.NavigationPage {
                 margin-end: 16;
                 selection-mode: none;
                 valign: start;
-                row-activated => $on_subscription_activated() swapped;
               }
             }
           };

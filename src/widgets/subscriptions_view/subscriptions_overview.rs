@@ -22,7 +22,7 @@ use gtk::glib;
 
 use crate::application::MQTTyApplication;
 use crate::client::{MQTTyClientSubscription, MQTTyClientSubscriptionsData};
-use crate::widgets::{MQTTySubscriptionDialog, MQTTySubscriptionMessages, MQTTySubscriptionRow};
+use crate::widgets::{MQTTySubscriptionDialog, MQTTySubscriptionRow};
 
 use super::handle_gesture_claim_event;
 
@@ -157,14 +157,6 @@ mod imp {
                     this.update_list_box();
                 }
             ));
-        }
-
-        #[template_callback]
-        fn on_subscription_activated(&self, row: &MQTTySubscriptionRow) {
-            let bottom_sheet = &self.bottom_sheet;
-
-            bottom_sheet.set_sheet(Some(&MQTTySubscriptionMessages::new()));
-            bottom_sheet.set_open(true);
         }
     }
 

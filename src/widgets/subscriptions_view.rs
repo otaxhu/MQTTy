@@ -15,6 +15,7 @@
 
 mod connection_dialog;
 mod connection_row;
+mod connections_sidebar;
 mod subscription_dialog;
 mod subscription_messages;
 mod subscription_row;
@@ -22,6 +23,7 @@ mod subscriptions_overview;
 
 pub use connection_dialog::MQTTySubscriptionsConnectionDialog;
 pub use connection_row::MQTTySubscriptionsConnectionRow;
+pub use connections_sidebar::MQTTySubscriptionsConnectionsSidebar;
 pub use subscription_dialog::MQTTySubscriptionDialog;
 pub use subscription_messages::MQTTySubscriptionMessages;
 pub use subscription_row::MQTTySubscriptionRow;
@@ -72,9 +74,6 @@ mod imp {
         nav_split_view: TemplateChild<adw::NavigationSplitView>,
 
         #[template_child]
-        list_box: TemplateChild<gtk::ListBox>,
-
-        #[template_child]
         stack: TemplateChild<gtk::Stack>,
 
         #[template_child]
@@ -93,7 +92,6 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
-            klass.bind_template_callbacks();
         }
 
         fn instance_init(obj: &glib::subclass::types::InitializingObject<Self>) {
@@ -132,24 +130,40 @@ mod imp {
                 ),
             );
 
-            self.list_box.bind_model(
-                Some(model),
-                glib::clone!(
-                    #[weak(rename_to = this)]
-                    self,
-                    #[upgrade_or_panic]
-                    move |o| {
-                        let data = o.downcast_ref::<MQTTyClientSubscriptionsData>().unwrap();
-
-                        this.new_connection_row_with_signals(data).upcast()
-                    }
-                ),
-            );
-
             let obj = self.obj();
 
-            let list_box = &self.list_box;
             let nav_split_view = &self.nav_split_view;
+
+            let sidebar = MQTTySubscriptionsConnectionsSidebar::new(model);
+
+            sidebar.connect_connection_activated(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                move |_, row, changed| {
+                    if changed {
+                        if row.is_selected() {
+                            this.nav_split_view.set_show_content(false);
+                        }
+
+                        let _ = this.data_overview_map.borrow_mut().remove(&row.data());
+                        return;
+                    }
+                    if row.is_selected() {
+                        this.nav_split_view.set_show_content(false);
+                        return;
+                    }
+                    let nav_split_view = &this.nav_split_view;
+                    let mut map = this.data_overview_map.borrow_mut();
+                    let overview = map
+                        .entry(row.data())
+                        .or_insert_with_key(|data| MQTTySubscriptionsOverview::from(data));
+
+                    nav_split_view.set_content(Some(overview));
+                    nav_split_view.set_show_content(true);
+                }
+            ));
+
+            nav_split_view.set_sidebar(Some(&sidebar));
 
             gtk::ClosureExpression::new::<bool>(
                 [
@@ -164,23 +178,11 @@ mod imp {
             )
             .bind(&**nav_split_view, "collapsed", glib::Object::NONE);
 
-            nav_split_view.connect_show_content_notify(glib::clone!(
-                #[weak]
-                list_box,
-                move |nav_split_view| {
-                    // So this should handle clicking the Back button, and together with the
-                    // code inside of on_connection_activated, should cover also the
-                    // unselecting thing
-                    //
-                    // Should also cover when you edit or delete a selected connection
-                    if !nav_split_view.shows_content() {
-                        if let Some(selected) = list_box.selected_row() {
-                            list_box.unselect_all();
-                            selected.set_selectable(false);
-                        }
-                    }
+            nav_split_view.connect_show_content_notify(move |nav_split_view| {
+                if !nav_split_view.shows_content() {
+                    sidebar.unselect_all();
                 }
-            ));
+            });
 
             let click = gtk::GestureClick::new();
             click.set_button(0);
@@ -221,8 +223,8 @@ mod imp {
                 )));
             });
 
-            self.header_bar.add_controller(click);
-            self.header_bar.add_controller(drag);
+            header_bar.add_controller(click);
+            header_bar.add_controller(drag);
         }
     }
     impl WidgetImpl for MQTTySubscriptionsView {}
@@ -233,95 +235,9 @@ mod imp {
             self.model
                 .get_or_init(|| gio::ListStore::new::<MQTTyClientSubscriptionsData>())
         }
-
-        pub fn new_connection_row_with_signals(
-            &self,
-            data: &MQTTyClientSubscriptionsData,
-        ) -> MQTTySubscriptionsConnectionRow {
-            let row = MQTTySubscriptionsConnectionRow::from(data);
-            row.connect_delete_request(glib::clone!(
-                #[weak(rename_to = this)]
-                self,
-                #[weak]
-                data,
-                move |row| {
-                    let model = this.model();
-
-                    if row.is_selected() {
-                        this.nav_split_view.set_show_content(false);
-                    }
-
-                    this.data_overview_map.borrow_mut().remove(&data).unwrap();
-
-                    model.remove(row.index() as u32);
-                }
-            ));
-            row.connect_edit_request(glib::clone!(
-                #[weak(rename_to = this)]
-                self,
-                #[weak]
-                data,
-                move |row| {
-                    glib::spawn_future_local(glib::clone!(
-                        #[weak]
-                        row,
-                        async move {
-                            let dialog =
-                                MQTTySubscriptionsConnectionDialog::new_edit(&data.connection());
-
-                            let app = MQTTyApplication::get_singleton();
-                            let window = app.active_window().unwrap();
-                            let Some(conn) = dialog.choose_future(&window).await else {
-                                return;
-                            };
-
-                            let model = this.model();
-
-                            let new_data = MQTTyClientSubscriptionsData::new();
-                            new_data.set_connection(&conn);
-                            new_data.set_subscriptions(&data.subscriptions());
-
-                            if row.is_selected() {
-                                this.nav_split_view.set_show_content(false);
-                            }
-
-                            this.data_overview_map.borrow_mut().remove(&data).unwrap();
-
-                            model.splice(row.index() as u32, 1, &[new_data]);
-                        }
-                    ));
-                }
-            ));
-            row
-        }
     }
 
     impl MQTTyDisplayModeIfaceImpl for MQTTySubscriptionsView {}
-
-    #[gtk::template_callbacks]
-    impl MQTTySubscriptionsView {
-        #[template_callback]
-        fn on_connection_activated(&self, row: &MQTTySubscriptionsConnectionRow) {
-            let list_box = &self.list_box;
-            let nav_split_view = &self.nav_split_view;
-            if row.is_selected() {
-                // Calls the above notify handler
-                nav_split_view.set_show_content(false);
-                return;
-            }
-            list_box.selected_row().map(|row| row.set_selectable(false));
-            list_box.unselect_all();
-            row.set_selectable(true);
-            list_box.select_row(Some(row));
-            let mut map = self.data_overview_map.borrow_mut();
-            let overview = map
-                .entry(row.data())
-                .or_insert_with_key(|data| MQTTySubscriptionsOverview::from(data));
-
-            nav_split_view.set_content(Some(overview));
-            nav_split_view.set_show_content(true);
-        }
-    }
 }
 
 glib::wrapper! {

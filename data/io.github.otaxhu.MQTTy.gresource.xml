@@ -25,6 +25,7 @@
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscription_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscription_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/subscription_messages.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/connections_sidebar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/connection_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/subscriptions_view/connection_dialog.ui</file>
 
@@ -37,6 +38,7 @@
     <!-- Icons -->
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/chat-bubbles-empty-symbolic.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/chat-bubble-empty-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/chat-none-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/agenda-symbolic.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/build-alt-symbolic.svg</file>
