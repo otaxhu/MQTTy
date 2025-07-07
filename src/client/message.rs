@@ -43,6 +43,9 @@ mod imp {
         #[property(get, set, nullable)]
         content_type: RefCell<Option<String>>,
 
+        #[property(get, set)]
+        timestamp: RefCell<String>,
+
         pub user_properties: RefCell<Vec<(String, String)>>,
 
         pub body: RefCell<Vec<u8>>,

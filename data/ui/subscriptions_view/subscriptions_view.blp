@@ -16,17 +16,11 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTySubscriptionsView: Adw.Bin {
-  Adw.NavigationSplitView nav_split_view {
-    show-content: false;
-    collapsed: true;
-    sidebar-width-fraction: 0.33;
-    min-sidebar-width: 300;
-    max-sidebar-width: 500;
+  Stack stack {
+    StackPage {
+      name: "no-connections";
 
-    sidebar: Adw.NavigationPage {
-      title: _("Connections");
-
-      Adw.ToolbarView {
+      child: Adw.ToolbarView {
         [top]
         Adw.HeaderBar header_bar {
           decoration-layout: "";
@@ -36,67 +30,44 @@ template $MQTTySubscriptionsView: Adw.Bin {
           Button {
             action-name: "win.subscriptions-new-connection";
             icon-name: "tab-new-symbolic";
+            tooltip-text: _("New connection");
           }
         }
 
-        content: Stack stack {
-          StackPage {
-            name: "no-connections";
+        content: Adw.StatusPage {
+          title: _("Subscribe to topics");
+          description: _("It seems that you don't have any connections open");
+          icon-name: "network-transmit-receive-symbolic";
 
-            child: Adw.StatusPage {
-              title: _("Subscribe to topics");
-              description: _("It seems that you don't have any connections open");
-              icon-name: "network-transmit-receive-symbolic";
+          child: Adw.Clamp {
+            Button {
+              styles [
+                "pill",
+                "suggested-action",
+              ]
 
-              child: Adw.Clamp {
-                Button {
-                  styles [
-                    "pill",
-                    "suggested-action",
-                  ]
+              action-name: "win.subscriptions-new-connection";
 
-                  action-name: "win.subscriptions-new-connection";
-
-                  Adw.ButtonContent {
-                    icon-name: "tab-new-symbolic";
-                    label: _("New connection");
-                  }
-                }
-              };
-            };
-          }
-
-          StackPage {
-            name: "connections";
-
-            child: ScrolledWindow {
-              Adw.Clamp {
-                ListBox list_box {
-                  styles [
-                    "boxed-list-separate",
-                  ]
-
-                  valign: start;
-                  margin-top: 16;
-                  margin-bottom: 16;
-                  margin-start: 16;
-                  margin-end: 16;
-                  selection-mode: single;
-                  row-activated => $on_connection_activated() swapped;
-                }
+              Adw.ButtonContent {
+                icon-name: "tab-new-symbolic";
+                label: _("New connection");
               }
-            };
-          }
+            }
+          };
         };
-      }
-    };
+      };
+    }
 
-    // Connection overview, shows the subscriptions for a specific connection, and some
-    // related utility buttons
-    //
-    // The property is being setted/unsetted when any connection inside of the sidebar is being
-    // clicked by the user
-    //
-    // content: ...;
+    StackPage {
+      name: "connections";
+
+      child: Adw.NavigationSplitView nav_split_view {
+        show-content: false;
+        collapsed: true;
+        sidebar-width-fraction: 0.33;
+        min-sidebar-width: 300;
+        max-sidebar-width: 500;
+      };
+    }
   }
 }

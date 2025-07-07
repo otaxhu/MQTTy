@@ -31,7 +31,7 @@ mod imp {
     #[properties(wrapper_type = super::MQTTySubscriptionsConnectionDialog)]
     pub struct MQTTySubscriptionsConnectionDialog {
         #[property(name = "name", get, set, type = String, member = name)]
-        #[property(name = "client-id", get, set, type = Option<String>, member = client_id)]
+        #[property(name = "client-id", get, set, type = String, member = client_id)]
         #[property(name = "url", get, set, type = String, member = url)]
         #[property(name = "username", get, set, type = Option<String>, member = username)]
         #[property(name = "password", get, set, type = Option<String>, member = password)]
@@ -65,7 +65,6 @@ mod imp {
         fn new() -> Self {
             Self {
                 connection: RefCell::new(MQTTyClientConnection {
-                    client_id: Some("".to_string()),
                     username: Some("".to_string()),
                     password: Some("".to_string()),
                     ..Default::default()
@@ -127,7 +126,7 @@ impl MQTTySubscriptionsConnectionDialog {
         glib::Object::builder()
             .property("heading", gettext("Edit connection"))
             .property("name", &conn.name)
-            .property("client-id", conn.client_id.as_ref())
+            .property("client-id", &conn.client_id)
             .property("url", &conn.url)
             .property("username", conn.username.as_ref())
             .property("password", conn.password.as_ref())

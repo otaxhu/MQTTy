@@ -219,13 +219,8 @@ impl From<&MQTTyClientSubscriptionsData> for MQTTySubscriptionsConnectionRow {
 
         let client = MQTTyClient::builder()
             .clean_start(conn.clean_start)
+            .client_id(&conn.client_id)
             .url(&conn.url);
-
-        let client = if let Some(client_id) = conn.client_id {
-            client.client_id(&client_id)
-        } else {
-            client
-        };
 
         let client = if let Some(username) = conn.username {
             client.username(&username)

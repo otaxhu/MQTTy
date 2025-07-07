@@ -20,7 +20,7 @@
 #[derive(Default, Clone)]
 pub struct MQTTyClientConnection {
     pub name: String,
-    pub client_id: Option<String>,
+    pub client_id: String,
     pub url: String,
     pub username: Option<String>,
     pub password: Option<String>,
