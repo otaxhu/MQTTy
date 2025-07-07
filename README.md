@@ -32,6 +32,11 @@ MQTTy it's a native MQTT GUI client written in Rust, that allows you to do what 
     <img src="https://flathub.org/api/badge?svg&locale=en" alt="Get it from Flathub">
   </a>
 
+## Translating
+[![Translation state](https://hosted.weblate.org/widget/MQTTy/MQTTy/multi-auto.svg)](https://hosted.weblate.org/engage/MQTTy/)
+
+You can help translate the app using the [Weblate page](https://hosted.weblate.org/engage/MQTTy/) of the project. Please read the instructions for translators before sending translations.
+
 ## A little bit of history...
 
 Imagine you are testing MQTT topics on any of the hundreds of Web MQTT clients, then you want to save all of the connection information for later use, oops! you can't, you need to create an account. You can't even save it locally, even if the browser allows to do it, at least that was my case.
