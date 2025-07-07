@@ -33,6 +33,7 @@ blueprint_files = [
   'ui/subscriptions_view/subscription_messages.blp',
   'ui/subscriptions_view/subscription_row.blp',
   'ui/subscriptions_view/subscription_dialog.blp',
+  'ui/subscriptions_view/connections_sidebar.blp',
   'ui/subscriptions_view/connection_row.blp',
   'ui/subscriptions_view/connection_dialog.blp',
   'ui/pages/base_page.blp',

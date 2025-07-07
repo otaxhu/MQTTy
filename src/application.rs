@@ -30,8 +30,8 @@ use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanel
 use crate::widgets::{
     MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyKeyValueRow,
     MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab,
-    MQTTyPublishView, MQTTySourceView, MQTTySubscriptionDialog, MQTTySubscriptionRow,
-    MQTTySubscriptionsConnectionDialog, MQTTySubscriptionsConnectionRow,
+    MQTTyPublishView, MQTTySourceView, MQTTySubscriptionDialog, MQTTySubscriptionMessages,
+    MQTTySubscriptionRow, MQTTySubscriptionsConnectionDialog, MQTTySubscriptionsConnectionRow,
     MQTTySubscriptionsOverview, MQTTySubscriptionsView,
 };
 
@@ -89,6 +89,7 @@ mod imp {
             MQTTySubscriptionsView::static_type();
             MQTTySubscriptionDialog::static_type();
             MQTTySubscriptionRow::static_type();
+            MQTTySubscriptionMessages::static_type();
             MQTTySubscriptionsOverview::static_type();
             MQTTySubscriptionsConnectionRow::static_type();
             MQTTySubscriptionsConnectionDialog::static_type();
