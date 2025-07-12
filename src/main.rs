@@ -25,6 +25,7 @@ mod gsettings;
 mod main_window;
 mod objects;
 mod pages;
+mod persistence;
 mod subclass;
 mod toast;
 mod utils;
