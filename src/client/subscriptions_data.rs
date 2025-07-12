@@ -14,9 +14,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::cell::RefCell;
+use std::sync::LazyLock;
 
+use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
+use gtk::glib::subclass::Signal;
 
 use crate::client::{MQTTyClientConnection, MQTTyClientSubscription};
 
@@ -40,7 +43,13 @@ mod imp {
         type ParentType = glib::Object;
     }
 
-    impl ObjectImpl for MQTTyClientSubscriptionsData {}
+    impl ObjectImpl for MQTTyClientSubscriptionsData {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: LazyLock<Vec<Signal>> =
+                LazyLock::new(|| vec![Signal::builder("changed").build()]);
+            &*SIGNALS
+        }
+    }
 }
 
 glib::wrapper! {
@@ -60,6 +69,7 @@ impl MQTTyClientSubscriptionsData {
         let mut v = self.imp().subscriptions.borrow_mut();
         v.clear();
         v.extend_from_slice(subscriptions);
+        self.emit_by_name::<()>("changed", &[]);
     }
 
     pub fn subscriptions(&self) -> Vec<MQTTyClientSubscription> {
@@ -72,5 +82,10 @@ impl MQTTyClientSubscriptionsData {
 
     pub fn set_connection(&self, conn: &MQTTyClientConnection) {
         self.imp().connection.borrow_mut().clone_from(conn);
+        self.emit_by_name::<()>("changed", &[]);
+    }
+
+    pub fn connect_changed(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
+        self.connect_closure("changed", false, glib::closure_local!(|o: &Self| cb(o)))
     }
 }
