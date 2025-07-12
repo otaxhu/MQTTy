@@ -31,8 +31,9 @@ use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::glib;
 use gtk::glib::subclass::Signal;
+use serde::Serialize;
 
-#[derive(Default, Clone, Copy, glib::Enum, PartialEq)]
+#[derive(Default, Clone, Copy, glib::Enum, PartialEq, Serialize)]
 #[enum_type(name = "MQTTyClientVersion")]
 pub enum MQTTyClientVersion {
     #[default]
@@ -40,7 +41,7 @@ pub enum MQTTyClientVersion {
     V5,
 }
 
-#[derive(Default, Clone, Copy, glib::Enum)]
+#[derive(Default, Clone, Copy, glib::Enum, Serialize)]
 #[enum_type(name = "MQTTyClientQos")]
 pub enum MQTTyClientQos {
     #[default]
