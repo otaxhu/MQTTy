@@ -13,6 +13,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod message_store;
+mod local_store;
 
-pub use message_store::MQTTyMessageStore;
+pub use local_store::MQTTyLocalStore;
