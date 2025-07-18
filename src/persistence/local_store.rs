@@ -29,8 +29,6 @@ pub enum Error {
     Sqlite(#[from] rusqlite::Error),
     #[error("JSON serialization error: {0}")]
     SerdeJson(#[from] serde_json::Error),
-    #[error("I/O error: {0}")]
-    Io(#[from] std::io::Error),
     #[error("Project directory not found (XDG dirs)")]
     NoProjectDir,
 }
@@ -200,108 +198,104 @@ impl MQTTyLocalStore {
         Ok(())
     }
 
-    pub fn get_messages_for_connection(
+    /// Returns a tuple `(messages, next_cursor)` for the given connection,
+    /// where `messages` is a list of messages ordered from newest to oldest,
+    /// and `next_cursor` is an optional cursor value that can be used as the `cursor`
+    /// parameter in a subsequent call to continue paginating older messages.
+    /// If there are no more messages, `next_cursor` will be `None`.
+    ///
+    /// The number of messages returned will not exceed `limit`.
+    pub fn get_recent_messages_for_connection(
         &self,
         conn: &MQTTyClientConnection,
-        after_id: Option<i64>,
+        cursor_id: Option<i64>,
         limit: i64,
-    ) -> Result<Vec<MQTTyClientMessage>> {
-        let Some(connection_id) = self
-            .sql_conn
-            .query_row(
-                indoc! {
-                    r#"
-                        SELECT id FROM mqtt_connections
-                        WHERE client_id = ?1 AND url = ?2 AND deleted = FALSE
-                    "#
-                },
-                rusqlite::params![conn.client_id, conn.url],
-                |row| row.get::<_, i64>(0),
-            )
-            .optional()?
-        else {
-            return Ok(vec![]);
-        };
+    ) -> Result<(Vec<MQTTyClientMessage>, Option<i64>)> {
+        let mut query = String::from(indoc! {
+            r#"
+                SELECT id, timestamp, topic, qos, version, retained, content_type, user_properties, body
+                FROM mqtt_messages
+                WHERE connection_id = (
+                    SELECT id FROM mqtt_connections WHERE client_id = ?1 AND url = ?2
+                )
+            "#
+        });
 
-        fn message_from_row(row: &rusqlite::Row) -> rusqlite::Result<MQTTyClientMessage> {
-            let topic = row.get::<_, String>(1)?;
-            let qos = match row.get::<_, i64>(2)? {
-                0 => MQTTyClientQos::Qos0,
-                1 => MQTTyClientQos::Qos1,
-                2 => MQTTyClientQos::Qos2,
-                n => panic!("Invalid QoS {n}"),
-            };
-            let version = match row.get::<_, String>(3)?.as_str() {
-                "3.x" => MQTTyClientVersion::V3X,
-                "5" => MQTTyClientVersion::V5,
-                v => panic!("Invalid version {v}"),
-            };
-            let retained = row.get::<_, bool>(4)?;
-            let content_type = row.get::<_, Option<String>>(5)?;
-            let user_properties: Vec<(String, String)> =
-                if let Some(json) = row.get::<_, Option<String>>(6)? {
-                    serde_json::from_str(&json).map_err(|e| {
-                        rusqlite::Error::FromSqlConversionFailure(
-                            6,
-                            rusqlite::types::Type::Text,
-                            Box::new(e),
-                        )
-                    })?
-                } else {
-                    Default::default()
-                };
-            let body = row.get::<_, Vec<u8>>(7)?;
+        let limit_param = limit + 1;
 
-            let message = MQTTyClientMessage::new();
-            message.set_topic(topic);
-            message.set_qos(qos);
-            message.set_mqtt_version(version);
-            message.set_retained(retained);
-            message.set_content_type(content_type);
-            message.set_user_properties(&user_properties);
-            message.set_body(&body);
+        let mut params: Vec<&dyn rusqlite::ToSql> = vec![&conn.client_id, &conn.url, &limit_param];
 
-            Ok(message)
+        if let Some(ref id) = cursor_id {
+            query.push_str(" AND id <= ?4");
+            params.push(id);
         }
 
-        // TODO: Remove duplication
-        //
-        // `rusqlite::params` requires references to all of the params,
-        // that includes `id`, but `id` doesn't live enough outside of the scope.
-        //
-        // Also `stmt.query_map` return value requires lifetime of `stmt`
-        let rows: std::result::Result<Vec<_>, _> = if let Some(id) = after_id {
-            let sql = indoc! {
-                r#"
-                    SELECT id, topic, qos, version, retained, content_type, user_properties, body
-                    FROM mqtt_messages
-                    WHERE connection_id = ?1 AND id > ?2
-                    ORDER BY id
-                    LIMIT ?3
-                "#
-            };
-            let params = rusqlite::params![connection_id, id, limit];
-            let mut stmt = self.sql_conn.prepare(sql)?;
+        query.push_str(" ORDER BY id DESC LIMIT ?3");
 
-            let rows = stmt.query_map(params, message_from_row)?;
-            rows.collect()
-        } else {
-            let sql = indoc! {
-                r#"
-                    SELECT id, topic, qos, version, retained, content_type, user_properties, body
-                    FROM mqtt_messages
-                    WHERE connection_id = ?1
-                    ORDER BY id
-                    LIMIT ?2
-                "#
-            };
-            let params = rusqlite::params![connection_id, limit];
-            let mut stmt = self.sql_conn.prepare(sql)?;
+        let mut stmt = self.sql_conn.prepare(&query)?;
+        let mut rows = stmt
+            .query_map(params.as_slice(), |row| {
+                let id = row.get::<_, i64>(0)?;
+                let timestamp = row.get::<_, String>(1)?;
+                let topic = row.get::<_, String>(2)?;
+                let qos = match row.get::<_, i64>(3)? {
+                    0 => MQTTyClientQos::Qos0,
+                    1 => MQTTyClientQos::Qos1,
+                    2 => MQTTyClientQos::Qos2,
+                    n => {
+                        return Err(rusqlite::Error::FromSqlConversionFailure(
+                            3,
+                            rusqlite::types::Type::Integer,
+                            format!("Invalid qos: {n}").into(),
+                        ))
+                    }
+                };
+                let version = match row.get::<_, String>(4)?.as_str() {
+                    "3.x" => MQTTyClientVersion::V3X,
+                    "5" => MQTTyClientVersion::V5,
+                    v => {
+                        return Err(rusqlite::Error::FromSqlConversionFailure(
+                            4,
+                            rusqlite::types::Type::Text,
+                            format!("Invalid version: {v}").into(),
+                        ))
+                    }
+                };
+                let retained = row.get::<_, bool>(5)?;
+                let content_type = row.get::<_, Option<String>>(6)?;
+                let user_properties: Vec<(String, String)> =
+                    if let Some(json) = row.get::<_, Option<String>>(7)? {
+                        serde_json::from_str(&json).map_err(|e| {
+                            rusqlite::Error::FromSqlConversionFailure(
+                                7,
+                                rusqlite::types::Type::Text,
+                                Box::new(e),
+                            )
+                        })?
+                    } else {
+                        Default::default()
+                    };
+                let body = row.get::<_, Vec<u8>>(8)?;
 
-            let rows = stmt.query_map(params, message_from_row)?;
-            rows.collect()
-        };
+                let message = MQTTyClientMessage::new();
+                message.set_timestamp(timestamp);
+                message.set_topic(topic);
+                message.set_qos(qos);
+                message.set_mqtt_version(version);
+                message.set_retained(retained);
+                message.set_content_type(content_type);
+                message.set_user_properties(&user_properties);
+                message.set_body(&body);
 
-        Ok(rows?)
+                Ok((message, id))
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        let next_cursor_id = rows.get(limit as usize).map(|r| r.1);
+        if next_cursor_id.is_some() {
+            rows.pop();
+        }
+
+        Ok((rows.into_iter().map(|r| r.0).collect(), next_cursor_id))
     }
 }
