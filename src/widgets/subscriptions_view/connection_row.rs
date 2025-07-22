@@ -14,6 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::cell::{Cell, OnceCell, RefCell};
+use std::collections::HashMap;
 use std::sync::LazyLock;
 
 use adw::prelude::*;
@@ -21,7 +22,7 @@ use adw::subclass::prelude::*;
 use glib::subclass::Signal;
 use gtk::glib;
 
-use crate::client::{MQTTyClient, MQTTyClientSubscriptionsData};
+use crate::client::{MQTTyClient, MQTTyClientSubscription, MQTTyClientSubscriptionsData};
 
 mod imp {
 
@@ -42,6 +43,8 @@ mod imp {
 
         #[property(get, set)]
         connected: Cell<bool>,
+
+        current_subscriptions: RefCell<Vec<MQTTyClientSubscription>>,
 
         #[template_child]
         indicator: TemplateChild<gtk::Box>,
@@ -100,76 +103,101 @@ mod imp {
                 }
             ));
 
-            let switcher = &self.switcher;
-            let spinner = &self.spinner;
+            let data = obj.data();
 
-            obj.connect_connected_notify(glib::clone!(
+            *self.current_subscriptions.borrow_mut() = data.subscriptions();
+
+            data.connect_changed_subscriptions(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
                 #[weak]
-                switcher,
-                #[weak]
-                spinner,
-                move |obj| {
-                    // We query the focus before setting its sensitive prop to false
-                    let switcher_has_focus = switcher.has_focus();
+                obj,
+                move |data| {
+                    let mut current_subscriptions = this.current_subscriptions.borrow_mut();
+                    let new_subscriptions = data.subscriptions();
 
-                    switcher.set_sensitive(false);
-                    spinner.set_opacity(1.0);
-
-                    if switcher_has_focus {
-                        obj.grab_focus();
+                    if !data.connection().connected {
+                        // Clear current subscriptions
+                        *current_subscriptions = vec![];
+                        return;
                     }
 
-                    let connected = obj.connected();
-                    let client = obj.client();
-                    let data = obj.data();
-                    let subs = data.subscriptions();
+                    let curr_map = current_subscriptions
+                        .iter()
+                        .map(|s| (s.topic_filter.clone(), s.clone()))
+                        .collect::<HashMap<_, _>>();
+                    let new_map = new_subscriptions
+                        .iter()
+                        .map(|s| (s.topic_filter.clone(), s.clone()))
+                        .collect::<HashMap<_, _>>();
 
-                    glib::spawn_future_local(glib::clone!(
-                        #[weak]
-                        obj,
-                        async move {
-                            async move {
-                                if !connected {
-                                    let _ = client.disconnect_client().await;
-                                    obj.set_indicator_state("disabled");
-                                    obj.set_tooltip_text(None);
-                                    return;
+                    let mut requires_reconnect = false;
+                    let mut to_subscribe = vec![];
+
+                    for (topic, new_sub) in &new_map {
+                        match curr_map.get(topic) {
+                            Some(prev_sub) => {
+                                if prev_sub.subscribed && !new_sub.subscribed {
+                                    requires_reconnect = true;
+                                    break;
                                 }
-
-                                futures::future::join_all(
-                                    subs.iter()
-                                        .filter(|sub| sub.subscribed)
-                                        .map(|sub| client.subscribe(&sub.topic_filter, sub.qos)),
-                                )
-                                .await
-                                .into_iter()
-                                .filter(|res| res.is_err())
-                                .for_each(|res| {
-                                    println!("Error while subscribing: {}", res.err().unwrap())
-                                });
-
-                                match client.connect_client().await {
-                                    Ok(_) => {
-                                        obj.set_indicator_state("success");
-                                        obj.set_tooltip_text(None);
-                                    }
-                                    Err(e) => {
-                                        obj.set_indicator_state("error");
-                                        obj.set_tooltip_text(Some(&format!(
-                                            "There was an error while connecting: {}",
-                                            e
-                                        )));
-                                    }
-                                };
+                                if !prev_sub.subscribed && new_sub.subscribed {
+                                    to_subscribe.push(new_sub.clone());
+                                }
                             }
-                            .await;
-
-                            spinner.set_opacity(0.0);
-                            switcher.set_sensitive(true);
+                            None => {
+                                if new_sub.subscribed {
+                                    to_subscribe.push(new_sub.clone());
+                                }
+                            }
                         }
-                    ));
+                    }
+
+                    for (topic, prev_sub) in &curr_map {
+                        if !new_map.contains_key(topic) && prev_sub.subscribed {
+                            requires_reconnect = true;
+                            break;
+                        }
+                    }
+
+                    if requires_reconnect {
+                        obj.set_connected(false);
+                        obj.set_connected(true);
+                    } else {
+                        let client = obj.client();
+                        glib::spawn_future_local(async move {
+                            futures::future::join_all(
+                                to_subscribe
+                                    .iter()
+                                    .map(|s| client.subscribe(&s.topic_filter, s.qos)),
+                            )
+                            .await
+                            .into_iter()
+                            .filter(|res| res.is_err())
+                            .for_each(|res| {
+                                println!("Error while subscribing: {}", res.err().unwrap())
+                            });
+                        });
+                    }
+
+                    *current_subscriptions = new_subscriptions;
                 }
             ));
+
+            data.connect_changed_connection(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                move |_| {
+                    this.handle_connect_client();
+                }
+            ));
+
+            obj.connect_connected_notify(|obj| {
+                let data = obj.data();
+                let mut conn = data.connection();
+                conn.connected = obj.connected();
+                data.set_connection(&conn);
+            });
         }
 
         fn signals() -> &'static [Signal] {
@@ -187,6 +215,82 @@ mod imp {
     impl PreferencesRowImpl for MQTTySubscriptionsConnectionRow {}
     impl ActionRowImpl for MQTTySubscriptionsConnectionRow {}
     impl ListBoxRowImpl for MQTTySubscriptionsConnectionRow {}
+
+    impl MQTTySubscriptionsConnectionRow {
+        /// It also handles disconnection if `obj.connected() == false`
+        fn handle_connect_client(&self) {
+            let obj = self.obj();
+
+            let switcher = &self.switcher;
+            let spinner = &self.spinner;
+
+            // We query the focus before setting its sensitive prop to false
+            let switcher_has_focus = switcher.has_focus();
+
+            switcher.set_sensitive(false);
+            spinner.set_opacity(1.0);
+
+            if switcher_has_focus {
+                obj.grab_focus();
+            }
+
+            let connected = obj.connected();
+            let client = obj.client();
+            let data = obj.data();
+            let subs = data.subscriptions();
+
+            glib::spawn_future_local(glib::clone!(
+                #[weak]
+                obj,
+                #[weak]
+                switcher,
+                #[weak]
+                spinner,
+                async move {
+                    async move {
+                        if !connected {
+                            let _ = client.disconnect_client().await;
+                            obj.set_indicator_state("disabled");
+                            obj.set_tooltip_text(None);
+                            return;
+                        }
+
+                        match client.connect_client().await {
+                            Ok(_) => {
+                                obj.set_indicator_state("success");
+                                obj.set_tooltip_text(None);
+
+                                // Must subscribe after the client is connected,
+                                // otherwise an error "Client disconnected" is returned.
+                                futures::future::join_all(
+                                    subs.iter()
+                                        .filter(|sub| sub.subscribed)
+                                        .map(|sub| client.subscribe(&sub.topic_filter, sub.qos)),
+                                )
+                                .await
+                                .into_iter()
+                                .filter(|res| res.is_err())
+                                .for_each(|res| {
+                                    println!("Error while subscribing: {}", res.err().unwrap())
+                                });
+                            }
+                            Err(e) => {
+                                obj.set_indicator_state("error");
+                                obj.set_tooltip_text(Some(&format!(
+                                    "There was an error while connecting: {}",
+                                    e
+                                )));
+                            }
+                        };
+                    }
+                    .await;
+
+                    spinner.set_opacity(0.0);
+                    switcher.set_sensitive(true);
+                }
+            ));
+        }
+    }
 }
 
 glib::wrapper! {
