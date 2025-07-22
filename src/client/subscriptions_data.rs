@@ -45,8 +45,12 @@ mod imp {
 
     impl ObjectImpl for MQTTyClientSubscriptionsData {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("changed").build()]);
+            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
+                vec![
+                    Signal::builder("changed-connection").build(),
+                    Signal::builder("changed-subscriptions").build(),
+                ]
+            });
             &*SIGNALS
         }
     }
@@ -69,7 +73,8 @@ impl MQTTyClientSubscriptionsData {
         let mut v = self.imp().subscriptions.borrow_mut();
         v.clear();
         v.extend_from_slice(subscriptions);
-        self.emit_by_name::<()>("changed", &[]);
+        drop(v);
+        self.emit_by_name::<()>("changed-subscriptions", &[]);
     }
 
     pub fn subscriptions(&self) -> Vec<MQTTyClientSubscription> {
@@ -82,10 +87,28 @@ impl MQTTyClientSubscriptionsData {
 
     pub fn set_connection(&self, conn: &MQTTyClientConnection) {
         self.imp().connection.borrow_mut().clone_from(conn);
-        self.emit_by_name::<()>("changed", &[]);
+        self.emit_by_name::<()>("changed-connection", &[]);
     }
 
-    pub fn connect_changed(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
-        self.connect_closure("changed", false, glib::closure_local!(|o: &Self| cb(o)))
+    pub fn connect_changed_connection(
+        &self,
+        cb: impl Fn(&Self) + 'static,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "changed-connection",
+            false,
+            glib::closure_local!(|o: &Self| cb(o)),
+        )
+    }
+
+    pub fn connect_changed_subscriptions(
+        &self,
+        cb: impl Fn(&Self) + 'static,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "changed-subscriptions",
+            false,
+            glib::closure_local!(|o: &Self| cb(o)),
+        )
     }
 }
