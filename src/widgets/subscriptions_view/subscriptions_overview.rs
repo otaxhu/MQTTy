@@ -183,6 +183,17 @@ mod imp {
             let obj = self.obj();
             let data = obj.data();
             let row = MQTTySubscriptionRow::from(sub);
+            row.connect_subscribed_notify(glib::clone!(
+                #[weak]
+                data,
+                move |row| {
+                    let mut subs = data.subscriptions();
+                    subs[row.index() as usize].subscribed = row.subscribed();
+                    data.set_subscriptions(&subs);
+
+                    // There is no need to call `this.update_list_box()`
+                }
+            ));
             row.connect_delete_request(glib::clone!(
                 #[weak]
                 data,
