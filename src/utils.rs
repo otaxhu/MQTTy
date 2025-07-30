@@ -138,6 +138,41 @@ fn locale_posix_to_bcp47(posix: &str) -> Option<Cow<'_, str>> {
     })
 }
 
+#[cfg(target_os = "windows")]
+fn getlocale() -> Option<String> {
+    // We need the POSIX form, so we are calling this instead of the MS setlocale one
+    //
+    // See:
+    // https://gitlab.gnome.org/GNOME/glib/-/blob/main/glib/gwin32.c#L94
+    Some(glib::win32_getlocale().into())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn getlocale() -> Option<String> {
+    // SAFETY:
+    //
+    // setlocale returned string is read-only and owned by the libc, here we are cloning it
+    // if it's not NULL, so it is safe.
+    //
+    // setlocale is also marked as MT-Unsafe (in Linux), but I think we are not
+    // calling from a different thread than the main one.
+    //
+    // POSIX Reference:
+    //
+    // > The application shall not modify the string returned which may be
+    // > overwritten by a subsequent call to setlocale().
+    //
+    // https://pubs.opengroup.org/onlinepubs/009695399/functions/setlocale.html
+    unsafe {
+        let res = gettext_sys::setlocale(gettextrs::LocaleCategory::LcAll as i32, std::ptr::null());
+        if res.is_null() {
+            None
+        } else {
+            CStr::from_ptr(res).to_str().ok().map(|s| s.to_owned())
+        }
+    }
+}
+
 pub fn get_icu_date_time_formatter() -> DateTimeFormatter<icu::datetime::fieldsets::YMDT> {
     // We rename so that xgettext command doesn't try to translate the call we
     // are doing below
@@ -151,39 +186,15 @@ pub fn get_icu_date_time_formatter() -> DateTimeFormatter<icu::datetime::fieldse
     let lang = if header.is_empty() {
         // If it's empty, that means that no language was loaded for the current locale.
         // We default to "en"
-        "en"
+        Cow::Borrowed("en")
     } else {
         // If it's not empty, a language was loaded for the current locale, we query it.
+        let current_locale = getlocale().expect("current locale could not be determined");
 
-        // SAFETY:
-        //
-        // setlocale returned string is read-only and owned by the libc, we are
-        // wrapping it in a &CStr, so it cannot get freed and we cannot mutate it.
-        //
-        // setlocale is also marked as MT-Unsafe (in Linux), but I think we are not
-        // calling from a different thread than the main one.
-        //
-        // POSIX Reference:
-        //
-        // > The application shall not modify the string returned which may be
-        // > overwritten by a subsequent call to setlocale().
-        //
-        // https://pubs.opengroup.org/onlinepubs/009695399/functions/setlocale.html
-        let current_locale = unsafe {
-            let res =
-                gettext_sys::setlocale(gettextrs::LocaleCategory::LcAll as i32, std::ptr::null());
-            if res.is_null() {
-                // Should be impossible for this to be NULL, since we know a
-                // language was loaded by gettext, and therefore a locale has
-                // to be set, but you never know ¯\_(ツ)_/¯
-                None
-            } else {
-                Some(CStr::from_ptr(res))
-            }
-            .expect("current locale could not be determined")
-        };
-        let current_locale = str::from_utf8(current_locale.to_bytes()).unwrap();
-        current_locale
+        // FIXME: handle "C" minimal locale case?? It should be impossible to happen
+        // since a language was loaded by gettext
+
+        Cow::Owned(current_locale)
     };
 
     let lang = locale_posix_to_bcp47(&lang).unwrap();
