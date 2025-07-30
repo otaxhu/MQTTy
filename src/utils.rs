@@ -13,8 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::{borrow::Cow, ffi::CStr};
+
 use adw::prelude::*;
 use gtk::{gio, glib};
+use icu::datetime::DateTimeFormatter;
 
 use crate::client::{MQTTyClientQos, MQTTyClientVersion};
 
@@ -118,4 +121,74 @@ pub fn get_accent_color_as_hex() -> &'static str {
         adw::AccentColor::Slate => "#6f8396",
         c => panic!("Invalid color: {c:?}"),
     }
+}
+
+// Localization-related functions
+
+fn locale_posix_to_bcp47(posix: &str) -> Option<Cow<'_, str>> {
+    let main_part = posix.split('.').next()?.split('@').next()?;
+
+    let mut parts = main_part.split('_');
+    let lang = parts.next()?;
+    let region = parts.next();
+
+    Some(match region {
+        Some(r) => Cow::Owned(format!("{lang}-{r}")),
+        None => Cow::Borrowed(lang),
+    })
+}
+
+pub fn get_icu_date_time_formatter() -> DateTimeFormatter<icu::datetime::fieldsets::YMDT> {
+    // We rename so that xgettext command doesn't try to translate the call we
+    // are doing below
+    use gettextrs::gettext as _private_gettext;
+
+    let header = _private_gettext("");
+
+    // Following almost the same logic from:
+    //
+    // https://gitlab.gnome.org/GNOME/glib/-/blob/main/glib/ggettext.c#L313
+    let lang = if header.is_empty() {
+        // If it's empty, that means that no language was loaded for the current locale.
+        // We default to "en"
+        "en"
+    } else {
+        // If it's not empty, a language was loaded for the current locale, we query it.
+
+        // SAFETY:
+        //
+        // setlocale returned string is read-only and owned by the libc, we are
+        // wrapping it in a &CStr, so it cannot get freed and we cannot mutate it.
+        //
+        // setlocale is also marked as MT-Unsafe (in Linux), but I think we are not
+        // calling from a different thread than the main one.
+        //
+        // POSIX Reference:
+        //
+        // > The application shall not modify the string returned which may be
+        // > overwritten by a subsequent call to setlocale().
+        //
+        // https://pubs.opengroup.org/onlinepubs/009695399/functions/setlocale.html
+        let current_locale = unsafe {
+            let res =
+                gettext_sys::setlocale(gettextrs::LocaleCategory::LcAll as i32, std::ptr::null());
+            if res.is_null() {
+                // Should be impossible for this to be NULL, since we know a
+                // language was loaded by gettext, and therefore a locale has
+                // to be set, but you never know ¯\_(ツ)_/¯
+                None
+            } else {
+                Some(CStr::from_ptr(res))
+            }
+            .expect("current locale could not be determined")
+        };
+        let current_locale = str::from_utf8(current_locale.to_bytes()).unwrap();
+        current_locale
+    };
+
+    let lang = locale_posix_to_bcp47(&lang).unwrap();
+
+    let locale: icu::locale::Locale = lang.parse().unwrap();
+
+    DateTimeFormatter::try_new(locale.into(), icu::datetime::fieldsets::YMDT::medium()).unwrap()
 }

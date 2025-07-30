@@ -17,8 +17,10 @@ directories = "6.0.0"
 formatx = "0.2.3"
 futures = "0.3.31"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
+gettext-sys = { version = "0.22.5", features = ["gettext-system"] }
 gtk = { version = "0.9", package = "gtk4", features = ["gnome_46"] }
 hex = "0.4.3"
+icu = "2.0.0"
 indoc = "2.0.6"
 paho = { version = "0.13.2", package = "paho-mqtt" }
 rusqlite = { version = "0.37.0", features = ["bundled"] }
