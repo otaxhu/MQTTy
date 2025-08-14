@@ -1,0 +1,314 @@
+---
+import "@/stylesheets/style.css";
+
+import Logo from "@/assets/logo.svg";
+import WindowsSymbolic from "@/assets/icons/vendor/windows-symbolic.svg";
+import FlatpakSymbolic from "@/assets/icons/vendor/flatpak-symbolic.svg";
+import DownLargeSymbolic from "@/assets/icons/down-large-symbolic.svg";
+import SendSymbolic from "@/assets/icons/send-symbolic.svg";
+import ChatBubblesEmptySymbolic from "@/assets/icons/chat-bubbles-empty-symbolic.svg";
+import BranchSymbolic from "@/assets/icons/branch-symbolic.svg";
+import CodeSymbolic from "@/assets/icons/code-symbolic.svg";
+import GitSymbolic from "@/assets/icons/vendor/git-symbolic.svg";
+import LanguageSymbolic from "@/assets/icons/language-symbolic.svg";
+
+import PublishView from "@/assets/publish_view.png";
+
+import SplitButton from "@/components/SplitButton.astro";
+import PrimaryButton from "@/components/PrimaryButton.astro";
+
+// `subtitleLabel` is the subtitle that is going to be shown below the "Download" label
+const platforms = [
+  {
+    subtitleLabel: "for Windows (Portable x64)",
+    className: "windows-only",
+    icon: WindowsSymbolic,
+    isHidden: false,
+    // This is only a fallback, later in the client it gets overwritten with
+    // a direct link to the download.
+    href: "https://github.com/otaxhu/MQTTy/releases/latest",
+  },
+  {
+    subtitleLabel: "for Linux (Flathub)",
+    className: "linux-only",
+    icon: FlatpakSymbolic,
+    isHidden: true,
+    href: "https://flathub.org/apps/io.github.otaxhu.MQTTy",
+  },
+  {
+    subtitleLabel: "Source code (Git)",
+    className: "",
+    icon: GitSymbolic,
+    isHidden: true,
+    href: "https://github.com/otaxhu/MQTTy",
+  },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MQTTy – Debug and test IoT-y apps</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <script is:inline>
+      document.documentElement.style.visibility = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      document.documentElement.style.opacity = "0";
+    </script>
+    <script src="@/lib/main.js"></script>
+  </head>
+  <body
+    class="bg-main-light dark:bg-main-dark text-fg-light dark:text-fg-dark overflow-x-hidden"
+  >
+    <!-- Hero -->
+    <section
+      class="h-dvh flex relative max-w-7xl mx-auto flex-col sm:flex-row"
+      id="top"
+    >
+      <div
+        class="flex grow gap-4 items-center justify-center flex-col md:flex-row overflow-y-clip text-center md:text-left"
+      >
+        <Logo width="128" height="128" aria-hidden="true" />
+        <div>
+          <h1 class="text-4xl md:text-5xl font-bold">MQTTy</h1>
+          <p class="font-semibold mt-1 text-lg">Debug and test IoT-y apps</p>
+        </div>
+      </div>
+      <div
+        class="flex relative grow items-start sm:items-center justify-center"
+      >
+        <div
+          class="p-0 lg:p-12 bg-transparent lg:bg-view-light/70 lg:dark:bg-view-dark/70 backdrop-blur-none lg:backdrop-blur-[2px] rounded-2xl shadow-none lg:shadow-card download-card"
+        >
+          {
+            platforms.map((platform) => {
+              const Icon = platform.icon;
+
+              return (
+                <SplitButton
+                  class:list={[
+                    "text-fg-dark fill-fg-dark",
+                    { hidden: platform.isHidden },
+                    platform.className,
+                  ]}
+                  href={platform.href}
+                  menuButtonLabel="More downloads"
+                >
+                  <div
+                    class="flex items-center gap-4"
+                    slot="primary-btn-content"
+                  >
+                    <Icon width="24" height="24" aria-hidden="true" />
+                    <div class="grow text-left">
+                      <p>Download</p>
+                      <p class="text-[0.6rem]">{platform.subtitleLabel}</p>
+                    </div>
+                  </div>
+                  <Fragment slot="menu-entries">
+                    {platforms.map((platform) => {
+                      const Icon = platform.icon;
+
+                      return (
+                        <PrimaryButton
+                          href={platform.href}
+                          class:list={[
+                            "text-fg-light dark:text-fg-dark fill-fg-light dark:fill-fg-dark",
+                            platform.className,
+                          ]}
+                        >
+                          <div class="flex items-center gap-4">
+                            <Icon width="24" height="24" aria-hidden="true" />
+                            <div>
+                              <p>Download</p>
+                              <p class="text-[0.6rem]">
+                                {platform.subtitleLabel}
+                              </p>
+                            </div>
+                          </div>
+                        </PrimaryButton>
+                      );
+                    })}
+                  </Fragment>
+                </SplitButton>
+              );
+            })
+          }
+          <div class="leading-4 mt-2 text-center">
+            <a
+              href="https://github.com/otaxhu/MQTTy/releases/latest"
+              target="_blank"
+              class="text-[0.625rem] anchor-primary"
+              >Other downloads (PGP signatures, checksums)</a
+            >
+          </div>
+        </div>
+        <picture
+          class="-z-1 absolute top-[50%] transform-[translateY(-50%)] left-[10%] max-h-dvh w-full hidden lg:block"
+          aria-hidden="true"
+        >
+          {/* TODO: Add dark variants of publish_view */}
+          <img
+            src={PublishView.src}
+            class="max-w-none max-h-dvh"
+            alt="Publish view"
+          />
+        </picture>
+      </div>
+      <DownLargeSymbolic
+        class="absolute fill-fg-light dark:fill-fg-dark bottom-0 left-[50%] mb-8 motion-safe:animate-passive-bounce"
+        height="24"
+        width="24"
+        aria-hidden="true"
+      />
+    </section>
+    <section class="bg-accent-bg/20 py-8 px-6">
+      <div class="max-w-xl m-auto">
+        <h2 class="font-bold text-2xl">Manage MQTT connections easily</h2>
+        <p class="mt-4 leading-[initial] hyphens-auto">
+          MQTTy is a lightweight and user-friendly desktop application tool
+          designed to manage MQTT connections and messages. It allows users to
+          organize messages by connection in a clean interface, send and
+          receive MQTT messages in real time, and quickly configure connection
+          settings without unnecessary complexity.
+        </p>
+        <p class="mt-2 leading-[initial] hyphens-auto">
+          MQTTy focuses on providing a minimal yet intuitive experience,
+          avoiding clutter and promoting the use of simple and editable
+          configuration files, making it ideal for developers, testers, and IoT
+          enthusiasts who value speed and clarity in their workflow.
+        </p>
+      </div>
+
+      <div class="mt-8 mx-auto max-w-3xl text-center">
+        <h2 class="font-bold text-2xl mb-4">What makes MQTTy unique?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 auto-rows-fr">
+          <div class="feature-card">
+            <svg
+              class="inline-block mb-2 shadow-card rounded-full"
+              width="64"
+              height="64"
+              viewBox="0 0 32 32"
+              aria-hidden="true"
+            >
+              <circle cx="16" cy="16" r="16" class="fill-accent-bg"></circle>
+              <SendSymbolic class="fill-fg-dark" transform="translate(8, 8)" />
+            </svg>
+            <p class="text-lg font-bold">Publish messages</p>
+            <p class="hyphens-auto mt-2 text-balance">
+              Send MQTT messages to any connected broker with just a few clicks.
+              Customize topics and payloads to fit your needs without extra
+              configuration steps.
+            </p>
+          </div>
+          <div class="feature-card">
+            <svg
+              class="inline-block mb-2 shadow-card rounded-full"
+              width="64"
+              height="64"
+              viewBox="0 0 32 32"
+              aria-hidden="true"
+            >
+              <circle cx="16" cy="16" r="16" class="fill-accent-bg"></circle>
+              <ChatBubblesEmptySymbolic
+                class="fill-fg-dark"
+                transform="translate(8, 8)"
+              />
+            </svg>
+            <p class="text-lg font-bold">Subscribe to topics</p>
+            <p class="hyphens-auto mt-2 text-balance">
+              Monitor incoming messages in real time by subscribing to the
+              topics you care about. Stay informed and debug efficiently as data
+              flows into your workspace.
+            </p>
+          </div>
+          <div class="feature-card">
+            <svg
+              class="inline-block mb-2 shadow-card rounded-full"
+              width="64"
+              height="64"
+              viewBox="0 0 32 32"
+              aria-hidden="true"
+            >
+              <circle cx="16" cy="16" r="16" class="fill-accent-bg"></circle>
+              <BranchSymbolic
+                class="fill-fg-dark"
+                transform="translate(8, 8)"
+              />
+            </svg>
+            <p class="text-lg font-bold">Share your work with your team</p>
+            <p class="hyphens-auto mt-2 text-balance">
+              Export and share your MQTT connection settings so teammates can
+              quickly replicate your environment. Collaboration becomes seamless
+              and consistent across projects.
+            </p>
+          </div>
+          <div class="feature-card">
+            <svg
+              class="inline-block mb-2 shadow-card rounded-full"
+              width="64"
+              height="64"
+              viewBox="0 0 32 32"
+              aria-hidden="true"
+            >
+              <circle cx="16" cy="16" r="16" class="fill-accent-bg"></circle>
+              <CodeSymbolic class="fill-fg-dark" transform="translate(8, 8)" />
+            </svg>
+            <p class="text-lg font-bold">Free/Libre software</p>
+            <p class="hyphens-auto mt-2 text-balance">
+              The project is licensed under the <b>GNU GPL 3.0</b> (or later versions)
+              terms. This means you are free to use, study, modify, and distribute
+              the software.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="max-w-xl m-auto px-6 py-8">
+      <h2 class="text-2xl font-bold">Contribute</h2>
+      <p class="mt-4 hyphens-auto leading-[initial]">
+        <b>MQTTy is an open source project</b>, we welcome any kind of
+        contributions and feedback, the project is hosted on <b>GitHub</b>
+        for better project's flexibility and visibility; we use its issue tracker
+        and pull requests systems to report bugs and propose new features to the
+        application's code and logic. You can contribute by doing so!
+      </p>
+      <p class="mt-2 hyphens-auto leading-[initial]">
+        If you are interested in contributing with code, do know that the
+        project's current stack is <b>Rust</b> programming language, <b>GTK</b> and
+        <b>libadwaita (Adwaita)</b>.
+      </p>
+      <p class="mt-2 hyphens-auto leading-[initial]">
+        We are also accepting translations through <b>Weblate</b> platform.
+      </p>
+      <PrimaryButton
+        href="https://github.com/otaxhu/MQTTy"
+        class="mt-4 text-fg-dark fill-fg-dark gap-4 rounded-xl justify-center"
+      >
+        <GitSymbolic width="24" height="24" aria-hidden="true" />
+        Repository
+      </PrimaryButton>
+      <PrimaryButton
+        href="https://hosted.weblate.org/engage/MQTTy/"
+        class="mt-4 text-fg-dark fill-fg-dark gap-4 rounded-xl justify-center"
+      >
+        <LanguageSymbolic width="24" height="24" aria-hidden="true" />
+        Help translate
+      </PrimaryButton>
+    </section>
+    <footer
+      class="py-16 px-4 sm:px-16 bg-footer-bg text-footer-fg text-center text-sm"
+    >
+      <p>MQTTy webpage &copy; 2025 Oscar Pernia.</p>
+      <p class="mt-2">MQTTy application &copy; 2025 Oscar Pernia.</p>
+      <p class="mt-4">
+        Authored and maintained by <a
+          href="https://github.com/otaxhu"
+          target="_blank"
+          class="anchor-primary">Oscar Pernia</a
+        > &#127483;&#127466;&#128156;.
+      </p>
+    </footer>
+  </body>
+</html>

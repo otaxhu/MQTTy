@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4875 4875" width="16" height="16">
+    <!--
+        NOTE: If you include "windows-symbolic" using `<use href="..."/>` tag,
+        the `<svg>` tag that it's including it must have viewBox="0 0 4875 4875"
+     -->
+    <path id="windows-symbolic" d="M0 0h2311v2310H0zm2564 0h2311v2310H2564zM0 2564h2311v2311H0zm2564 0h2311v2311H2564"/>
+</svg>
