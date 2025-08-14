@@ -1,0 +1,204 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Adwaita Sans";
+  src: url("/fonts/AdwaitaSans-Regular.ttf") format("truetype");
+}
+
+:root {
+  scroll-behavior: smooth;
+  font-size: 17px;
+  font-family: "Adwaita Sans", sans-serif;
+  transition: opacity 0.3s;
+}
+
+@theme {
+  /* Accent color purple */
+  --color-accent-bg: #9141ac;
+  --color-accent-fg-light: #8939a4;
+  --color-accent-fg-dark: #fba7ff;
+
+  /* Foreground colors */
+  --color-fg-light: #000006cc;
+  --color-fg-dark: #ffffff;
+
+  /* For main background */
+  --color-main-light: #fafafb;
+  --color-main-dark: #222226;
+
+  /* Background for containers with content */
+  --color-view-light: #ffffff;
+  --color-view-dark: #1d1d20;
+
+  /* Background for popovers */
+  --color-popover-light: #ffffff;
+  --color-popover-dark: #36363a;
+
+  --color-footer-bg: #000000a6;
+  --color-footer-fg: #ffffffe6;
+
+  --shadow-card:
+    0 2px 6px 3px rgba(0, 0, 0, 0.1), 0 4px 7px 3px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+
+  /* The Tailwind one has too much movement */
+  --animate-passive-bounce: passive-bounce 2s infinite;
+
+  @keyframes passive-bounce {
+    0%,
+    100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+}
+
+.btn-primary {
+  background-color: var(--color-accent-bg);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-primary:is(:hover, :focus-visible) {
+  background-color: hsl(from var(--color-accent-bg) h s calc(l + 5));
+}
+
+.btn-primary:is(:active, [aria-expanded="true"]) {
+  background-color: hsl(from var(--color-accent-bg) h s calc(l - 5));
+}
+
+.card-box-shadow {
+  box-shadow:
+    0 2px 6px 3px rgba(0, 0, 0, 0.1),
+    0 4px 7px 3px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.github-btn {
+  --bg-color: #1f2328;
+  background-color: var(--bg-color);
+  transition: background-color 0.3s;
+  font-weight: 600;
+  color: white;
+}
+
+.github-btn:is(:hover, :focus-visible) {
+  background-color: hsl(from var(--bg-color) h s calc(l + 5));
+}
+
+.github-btn:active {
+  background-color: hsl(from var(--bg-color) h s calc(l + 7.5));
+}
+
+.tippy-svg-arrow {
+  fill: var(--color-view-light) !important;
+}
+
+.popover-menu {
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background-color: var(--color-popover-light);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 15px;
+}
+
+.popover-menu > * {
+  border-radius: 9px;
+  padding: 8px;
+  transition: background-color 0.3s;
+  background-color: transparent;
+}
+
+.popover-menu > *:is(:hover, :focus-visible),
+.feature-card:hover {
+  background-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.popover-menu > *:active {
+  background-color: color-mix(in srgb, currentColor 19%, transparent);
+}
+
+.anchor-primary {
+  transition: color 0.3s;
+  text-decoration: underline;
+}
+
+.anchor-primary:is(:hover, :focus-visible) {
+  color: var(--color-accent-fg-light);
+}
+
+/* Handle color of links in footer */
+.bg-footer-bg .anchor-primary:is(:hover, :focus-visible) {
+  color: var(--color-accent-fg-dark);
+}
+
+.feature-card {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  transition: background-color .3s;
+}
+
+@media (prefers-color-scheme: dark) {
+  .github-btn {
+    --bg-color: rgba(0, 0, 0);
+    background-color: var(--bg-color);
+  }
+
+  .tippy-svg-arrow {
+    fill: var(--color-popover-dark) !important;
+  }
+
+  .popover-menu {
+    background-color: var(--color-popover-dark);
+  }
+
+  .anchor-primary:is(:hover, :focus-visible) {
+    color: var(--color-accent-fg-dark);
+  }
+}
+
+/*
+  OS detection.
+
+  Fallback for when the OS cannot be determined is already provided in the template,
+  by default it shows Windows-related download links
+*/
+
+body.is-linux .windows-only {
+  display: none;
+}
+
+body.is-linux .linux-only {
+  display: flex;
+}
+
+body.is-windows .linux-only {
+  display: none;
+}
+
+body.is-windows .windows-only {
+  display: flex;
+}
+
+body.is-linux .popover-menu > .linux-only {
+  display: none;
+}
+
+body.is-linux .popover-menu > :not(.linux-only) {
+  display: flex;
+}
+
+body.is-windows .popover-menu > .windows-only {
+  display: none;
+}
+
+body.is-windows .popover-menu > :not(.windows-only) {
+  display: flex;
+}

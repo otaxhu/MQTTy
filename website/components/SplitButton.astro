@@ -1,0 +1,64 @@
+---
+import PanDownSymbolic from "@/assets/icons/pan-down-symbolic.svg";
+import PrimaryButton from "@/components/PrimaryButton.astro";
+
+interface Props {
+  class?: string;
+  href?: string;
+  menuButtonLabel?: string;
+  [key: string]: any;
+}
+const { class: className = "", href, menuButtonLabel, ...props } = Astro.props;
+---
+
+<mqtty-split-button
+  class:list={["flex", className]}
+  data-menu-html={await Astro.slots.render("menu-entries")}
+  {...props}
+>
+  <PrimaryButton
+    class="rounded-l-xl border-r border-[#ffffff40] grow"
+    href={href}
+    data-split-main
+  >
+    <slot name="primary-btn-content" />
+  </PrimaryButton>
+  <PrimaryButton
+    class="rounded-r-xl"
+    aria-haspopup="menu"
+    type="button"
+    aria-label={menuButtonLabel}
+    data-split-toggle
+  >
+    <PanDownSymbolic fill="white" aria-hidden="true" data-menu-icon />
+  </PrimaryButton>
+</mqtty-split-button>
+
+<script>
+  import "tippy.js/dist/svg-arrow.css";
+  import tippy, { roundArrow } from "tippy.js";
+
+  let hiddenRoundArrow = roundArrow.replace(/<\s*svg\b/, "<svg aria-hidden=\"true\"");
+
+  class MQTTySplitButton extends HTMLElement {
+    connectedCallback() {
+      const toggle = this.querySelector("[data-split-toggle]");
+      const menuIcon = this.querySelector("[data-menu-icon]");
+
+      tippy(menuIcon, {
+        allowHTML: true,
+        content:
+          `<ul class="card-box-shadow popover-menu">` +
+          this.dataset.menuHtml +
+          `</ul>`,
+        trigger: "click",
+        triggerTarget: toggle,
+        interactive: true,
+        arrow: hiddenRoundArrow,
+        placement: "bottom",
+      });
+    }
+  }
+
+  customElements.define("mqtty-split-button", MQTTySplitButton);
+</script>

@@ -1,0 +1,24 @@
+---
+interface Props {
+  class?: string;
+  href?: string;
+  [key: string]: any;
+}
+const { class: className = "", href, ...props } = Astro.props;
+const finalClass = [
+  "btn-primary px-4 py-3 flex items-center cursor-pointer",
+  className,
+];
+---
+
+{
+  href ? (
+    <a class:list={finalClass} href={href} target="_blank" {...props}>
+      <slot />
+    </a>
+  ) : (
+    <button class:list={finalClass} {...props}>
+      <slot />
+    </button>
+  )
+}
