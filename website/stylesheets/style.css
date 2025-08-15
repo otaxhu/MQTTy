@@ -1,10 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Adwaita Sans";
-  src: url("/fonts/AdwaitaSans-Regular.ttf") format("truetype");
-}
-
 :root {
   scroll-behavior: smooth;
   font-size: 17px;

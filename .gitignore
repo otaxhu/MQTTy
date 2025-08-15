@@ -17,8 +17,3 @@
 /website/node_modules/
 /website/.astro/
 /website/dist/
-
-# I already have too much maintaining the Cargo.lock, I think a simple landing page
-# doesn't need lock files
-/website/package.lock
-/website/pnpm-lock.yaml
