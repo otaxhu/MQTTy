@@ -19,6 +19,7 @@ jobs:
         with:
           path: website
           node-version: 20
+          package-manager: pnpm@latest
 
   deploy:
     runs-on: ubuntu-latest
