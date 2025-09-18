@@ -14,8 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: withastro/action@v3
-        env:
-          ASTRO_CONFIG_BASE: /MQTTy
         with:
           path: website
           node-version: 20
