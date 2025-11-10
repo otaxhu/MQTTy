@@ -23,6 +23,12 @@ use crate::client::{
     MQTTyClientConnection, MQTTyClientMessage, MQTTyClientQos, MQTTyClientVersion,
 };
 
+pub struct ConnectionModel {
+    // Just the identity fields of an MQTT connection
+    pub url: String,
+    pub client_id: String,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("SQLite error: {0}")]
@@ -37,11 +43,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// This struct handles local storage using a SQLite database for MQTT messages
 /// and MQTT connections, but mostly the former.
-pub struct MQTTyLocalStore {
+pub struct MQTTySubscriptionMessagesStore {
     sql_conn: rusqlite::Connection,
 }
 
-impl MQTTyLocalStore {
+impl MQTTySubscriptionMessagesStore {
     pub fn new() -> Result<Self> {
         let db_path = Self::get_db_path()?;
         let sql_conn = rusqlite::Connection::open(db_path)?;
@@ -117,7 +123,7 @@ impl MQTTyLocalStore {
     }
 
     /// Returns the row id, and whether a new row was inserted
-    fn get_or_insert_connection(&self, conn: &MQTTyClientConnection) -> Result<(i64, bool)> {
+    fn get_or_insert_connection(&self, conn: &ConnectionModel) -> Result<(i64, bool)> {
         let connection_id = self
             .sql_conn
             .query_row(
@@ -150,11 +156,7 @@ impl MQTTyLocalStore {
         Ok((connection_id, !found))
     }
 
-    pub fn store_message(
-        &self,
-        conn: &MQTTyClientConnection,
-        msg: &MQTTyClientMessage,
-    ) -> Result<()> {
+    pub fn store_message(&self, conn: &ConnectionModel, msg: &MQTTyClientMessage) -> Result<()> {
         let (conn_id, _) = self.get_or_insert_connection(conn)?;
 
         let timestamp = msg.timestamp();
@@ -207,7 +209,7 @@ impl MQTTyLocalStore {
     /// The number of messages returned will not exceed `limit`.
     pub fn get_recent_messages_for_connection(
         &self,
-        conn: &MQTTyClientConnection,
+        conn: &ConnectionModel,
         cursor_id: Option<i64>,
         limit: i64,
     ) -> Result<(Vec<MQTTyClientMessage>, Option<i64>)> {

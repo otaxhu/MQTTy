@@ -85,6 +85,9 @@ mod imp {
         #[property(get, construct_only)]
         clean_start: Cell<bool>,
 
+        #[property(get)]
+        connected: Cell<bool>,
+
         client: OnceCell<paho::AsyncClient>,
     }
 
@@ -112,6 +115,51 @@ mod imp {
                 Err(e) => panic!("CLIENT CREATION ERROR {:?}", e),
                 Ok(c) => c,
             };
+
+            // Receiving the connected status, and redirecting it to the
+            // property/signal logic
+            let (connected_tx, connected_rx) = async_channel::bounded(1);
+
+            client.set_connected_callback(glib::clone!(
+                #[strong]
+                connected_tx,
+                move |_| {
+                    connected_tx.send_blocking(true);
+                }
+            ));
+
+            client.set_disconnected_callback(glib::clone!(
+                #[strong]
+                connected_tx,
+                move |_, _, _| {
+                    connected_tx.send_blocking(false);
+                }
+            ));
+
+            client.set_connection_lost_callback(glib::clone!(
+                #[strong]
+                connected_tx,
+                move |_| {
+                    connected_tx.send_blocking(false);
+                }
+            ));
+
+            glib::spawn_future_local(glib::clone!(
+                #[weak]
+                obj,
+                #[weak(rename_to = this)]
+                self,
+                async move {
+                    loop {
+                        let Ok(connected) = connected_rx.recv().await else {
+                            return;
+                        };
+
+                        this.connected.set(connected);
+                        obj.notify_connected();
+                    }
+                }
+            ));
 
             // Receiving message signal and redirecting it to Object signal emission
             let (message_tx, message_rx) = async_channel::bounded(1);
@@ -175,6 +223,10 @@ mod imp {
 
             let obj = self.obj();
 
+            if obj.connected() {
+                return Ok(());
+            }
+
             let mqtt_version = obj.mqtt_version();
 
             let mut opts = paho::ConnectOptionsBuilder::with_mqtt_version(mqtt_version);
@@ -209,6 +261,12 @@ mod imp {
         pub async fn disconnect_client(&self) -> Result<(), String> {
             let client = self.client();
 
+            let obj = self.obj();
+
+            if !obj.connected() {
+                return Ok(());
+            }
+
             client
                 .disconnect(None)
                 .await
@@ -225,14 +283,72 @@ mod imp {
                 .map_err(|e| e.to_string())
         }
 
-        pub async fn subscribe(&self, topic: &str, qos: MQTTyClientQos) -> Result<(), String> {
+        pub async fn subscribe_many(
+            &self,
+            topics_qoss: &[(String, MQTTyClientQos)],
+        ) -> Result<(), String> {
             let client = self.client();
 
             client
-                .subscribe(topic, qos)
+                .subscribe_many(
+                    topics_qoss
+                        .iter()
+                        .map(|t| t.0.as_str())
+                        .collect::<Vec<_>>()
+                        .as_slice(),
+                    topics_qoss
+                        .iter()
+                        .map(|t| t.1)
+                        .collect::<Vec<_>>()
+                        .as_slice(),
+                )
                 .await
                 .map(|res| println!("SUBSCRIPTION SERVER RESPONSE: {res:?}"))
                 .map_err(|e| e.to_string())
+        }
+
+        pub async fn unsubscribe(&self, topic: &str) -> Result<(), String> {
+            let client = self.client();
+
+            client
+                .unsubscribe(topic)
+                .await
+                .map(|res| println!("UNSUBSCRIPTION SERVER RESPONSE: {res:?}"))
+                .map_err(|e| e.to_string())
+        }
+
+        pub async fn delete_current_session(&self, reconnect_after: bool) -> Result<(), String> {
+            let obj = self.obj();
+            let original_clean_start = obj.clean_start();
+            let was_connected = obj.connected();
+
+            if was_connected {
+                self.disconnect_client().await?;
+
+                if original_clean_start {
+                    // Was already in a clean session, session is dropped once the client is
+                    // disconnected, we just reconnect and return.
+                    return self.connect_client().await;
+                }
+            }
+
+            self.clean_start.set(true);
+
+            self.connect_client().await?;
+
+            self.clean_start.set(original_clean_start);
+
+            if !reconnect_after || !original_clean_start {
+                self.disconnect_client().await?;
+            }
+            if reconnect_after && !original_clean_start {
+                // The expression !original_clean_start being true produced
+                // the client to be disconnected in the block above, inside this block
+                // we know it's true, so we reconnect with the original clean start.
+                self.connect_client().await?;
+            }
+
+            Ok(())
         }
     }
 }
@@ -310,8 +426,33 @@ impl MQTTyClient {
         self.imp().publish(message).await
     }
 
-    pub async fn subscribe(&self, topic: &str, qos: MQTTyClientQos) -> Result<(), String> {
-        self.imp().subscribe(topic, qos).await
+    pub async fn subscribe_many(
+        &self,
+        topics_qoss: &[(String, MQTTyClientQos)],
+    ) -> Result<(), String> {
+        self.imp().subscribe_many(topics_qoss).await
+    }
+
+    pub async fn unsubscribe(&self, topic: &str) -> Result<(), String> {
+        self.imp().unsubscribe(topic).await
+    }
+
+    /// Deletes the current session between the client and the server,
+    /// effectively deleting any subscriptions that the client had.
+    /// It performs reconnection if the client was previously connected.
+    ///
+    /// It is specified in the MQTT spec how to perform this.
+    ///
+    /// MQTT 3.1.1 specification, Section 3.1.4.2:
+    ///
+    /// > When a Client has determined that it has no further use for the session
+    /// > it should do a final connect with CleanSession set to 1 and then disconnect.
+    ///
+    /// https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718030
+    ///
+    /// This works for both MQTT v5 and v3.x
+    pub async fn delete_current_session(&self, reconnect_after: bool) -> Result<(), String> {
+        self.imp().delete_current_session(reconnect_after).await
     }
 
     pub fn connect_message(
