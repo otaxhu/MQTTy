@@ -345,7 +345,7 @@ mod imp {
             // as it is not going to happen.
             //
             // Would need this method to be async, so I don't know if it's worthful.
-            self.client.borrow_mut().replace(client);
+            self.client.borrow_mut().replace(client.clone());
 
             // Syncing connected
             client.notify_connected();
