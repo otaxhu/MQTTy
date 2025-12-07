@@ -19,9 +19,7 @@ use directories::ProjectDirs;
 use indoc::indoc; // Used in order to generate properly indented SQL queries
 use rusqlite::OptionalExtension;
 
-use crate::client::{
-    MQTTyClientConnection, MQTTyClientMessage, MQTTyClientQos, MQTTyClientVersion,
-};
+use crate::client::{MQTTyClientMessage, MQTTyClientQos, MQTTyClientVersion};
 
 pub struct ConnectionModel {
     // Just the identity fields of an MQTT connection
@@ -98,22 +96,6 @@ impl MQTTySubscriptionMessagesStore {
         })?;
 
         Ok(Self { sql_conn })
-    }
-
-    /// TODO: inexistant feature "Workspaces" should call this function
-    ///
-    /// This function is supposed to be called when the application starts
-    /// or by user interaction, it syncs the user Workspace file
-    /// (only the connections are needed and should be passed to `conns`)
-    /// with this database.
-    ///
-    /// The connections that are both in `conns` and the `mqtt_connections` table
-    /// are automatically updated and the field `deleted` is reset to `FALSE`.
-    /// Connections that exist in the database but not in `conns` are soft-deleted.
-    ///
-    /// If a connection from `conns` doesn't exist in the database, it is inserted.
-    pub fn sync_connections(&self, conns: &[MQTTyClientConnection]) -> Result<()> {
-        todo!()
     }
 
     fn get_db_path() -> Result<PathBuf> {

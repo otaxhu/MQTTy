@@ -13,11 +13,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod client_wrapper;
-mod controller;
-mod store;
-mod subscription;
+use crate::client::MQTTyClientQos;
 
-pub use client_wrapper::MQTTySubscriptionMessagesClientWrapper;
-pub use controller::MQTTySubscriptionMessagesController;
-pub use subscription::MQTTySubscriptionMessagesSubscription;
+/// This struct represents a model for an MQTT subscription
+///
+/// For now we only support MQTT v3.x subscriptions
+#[derive(Default, Clone)]
+pub struct MQTTySubscriptionModel {
+    /// May contain wildcards
+    pub topic_filter: String,
+    pub qos: MQTTyClientQos,
+    /// The user choice to be subscribed
+    pub user_subscribed: bool,
+}

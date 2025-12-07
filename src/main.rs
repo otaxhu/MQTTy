@@ -23,6 +23,7 @@ mod content_type;
 mod display_mode;
 mod gsettings;
 mod main_window;
+mod models;
 mod objects;
 mod pages;
 mod services;

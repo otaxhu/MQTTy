@@ -13,11 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod client_wrapper;
-mod controller;
-mod store;
+mod connection;
 mod subscription;
 
-pub use client_wrapper::MQTTySubscriptionMessagesClientWrapper;
-pub use controller::MQTTySubscriptionMessagesController;
-pub use subscription::MQTTySubscriptionMessagesSubscription;
+pub use connection::MQTTyConnectionModel;
+pub use subscription::MQTTySubscriptionModel;

@@ -1,5 +1,19 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use std::cell::{Cell, OnceCell, RefCell};
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::LazyLock;
 
@@ -8,13 +22,14 @@ use adw::subclass::prelude::*;
 use glib::subclass::Signal;
 use gtk::{gio, glib};
 
-use crate::client::MQTTyClient;
-use crate::client::MQTTyClientSubscription;
-use crate::client::{MQTTyClientMessage, MQTTyClientVersion};
+use crate::client::{
+    MQTTyClient, MQTTyClientConnectionState, MQTTyClientMessage, MQTTyClientVersion,
+};
+use crate::models::{MQTTyConnectionModel, MQTTySubscriptionModel};
 
-use super::models::ClientWrapperConnectionModel;
 use super::store;
 use super::store::MQTTySubscriptionMessagesStore;
+use super::MQTTySubscriptionMessagesSubscription;
 
 mod imp {
 
@@ -26,26 +41,19 @@ mod imp {
         #[property(get)]
         pub connected: Cell<bool>,
 
-        #[property(name = "name", get, set, member = name, type = String)]
-        #[property(name = "client-id", get, set, member = client_id, type = String)]
-        #[property(name = "url", get, set, member = url, type = String)]
-        #[property(name = "username", get, set, member = username, type = Option<String>, nullable)]
-        #[property(name = "password", get, set, member = password, type = Option<String>, nullable)]
-        #[property(name = "mqtt-version", get, set, member = mqtt_version, type = MQTTyClientVersion, builder(Default::default()))]
+        #[property(name = "name", get, member = name, type = String)]
+        #[property(name = "client-id", get, member = client_id, type = String)]
+        #[property(name = "url", get, member = url, type = String)]
+        #[property(name = "username", get, member = username, type = Option<String>, nullable)]
+        #[property(name = "password", get, member = password, type = Option<String>, nullable)]
+        #[property(name = "mqtt-version", get, member = mqtt_version, type = MQTTyClientVersion, builder(Default::default()))]
         #[property(name = "user-connected", get, set, member = user_connected, type = bool)]
-        #[property(name = "wipe-queue-on-connect", get, set, member = wipe_queue_on_connect, type = bool)]
-        pub connection_model: RefCell<ClientWrapperConnectionModel>,
+        #[property(name = "wipe-queue-on-connect", get, member = wipe_queue_on_connect, type = bool)]
+        pub connection_model: RefCell<MQTTyConnectionModel>,
 
-        /** type: gio::ListStore<MQTTyClientSubscription> */
-        #[property(get = |o| Self::subscriptions(o).upcast::<gio::ListModel>(), type = gio::ListModel)]
+        /** type: gio::ListStore<MQTTySubscriptionMessagesSubscription> */
+        #[property(get = Self::subscriptions)]
         subscriptions: OnceCell<gio::ListStore>,
-
-        /// Maps subscriptions to tuples of indexes in ":subscriptions" prop and subscription's
-        /// "::user-changed" signal handler id. When the subscription gets removed by calling
-        /// self.remove_subscription(), this wrapper should both disconnect from the signal and
-        /// remove the subscription from the ":subscriptions" list.
-        subscriptions_map:
-            RefCell<HashMap<MQTTyClientSubscription, (usize, glib::SignalHandlerId)>>,
 
         pub store: OnceCell<Rc<MQTTySubscriptionMessagesStore>>,
         pub client: RefCell<Option<MQTTyClient>>,
@@ -64,92 +72,84 @@ mod imp {
     impl ObjectImpl for MQTTySubscriptionMessagesClientWrapper {
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
-                vec![Signal::builder("message")
-                    .param_types([MQTTyClientMessage::static_type()])
-                    .build()]
+                vec![
+                    Signal::builder("message")
+                        .param_types([MQTTyClientMessage::static_type()])
+                        .build(),
+                    Signal::builder("connection-state-changed")
+                        .param_types([MQTTyClientConnectionState::static_type()])
+                        .build(),
+                ]
             });
             &*SIGNALS
         }
     }
 
     impl MQTTySubscriptionMessagesClientWrapper {
-        fn priv_contains_subscription(&self, sub: &MQTTyClientSubscription) -> bool {
-            let map = self.subscriptions_map.borrow();
-
-            map.contains_key(sub) || self.contains_subscription(&sub.topic_filter())
-        }
-
         pub fn contains_subscription(&self, topic_filter: &str) -> bool {
-            let map = self.subscriptions_map.borrow();
+            let subs = self.subscriptions_vec();
 
-            map.keys().any(|other| other.topic_filter() == topic_filter)
+            subs.into_iter().any(|s| s.topic_filter() == topic_filter)
         }
 
-        pub async fn add_subscriptions(
+        pub fn contains_subscription_for_update(
             &self,
-            subs: &[MQTTyClientSubscription],
-        ) -> Result<(), String> {
-            let mut map = self.subscriptions_map.borrow_mut();
+            old: &MQTTySubscriptionMessagesSubscription,
+            new_topic_filter: &str,
+        ) -> bool {
+            let subs = self.subscriptions_vec();
 
-            let client = self.client();
+            subs.into_iter()
+                .filter(|s| s != old)
+                .any(|s| s.topic_filter() == new_topic_filter)
+        }
 
-            let list_subs = self.subscriptions();
-            let n_subs = list_subs.n_items();
-
-            let mut new_subscriptions = vec![];
-
-            for (i, sub) in subs.iter().enumerate() {
-                if self.priv_contains_subscription(sub) {
-                    // If sub is contained, it means that this client wrapper
-                    // is already listening to "::user-changed" and reacting
-                    // accordingly to prop changes. Even though this could be a different
-                    // glib::Object, the topic_filter is already handled.
-                    //
-                    // We continue with the next one.
-                    continue;
-                }
-
-                // The sub is new and not already handled by this client.
-
-                let prev_topic_filter = RefCell::new(sub.topic_filter());
-
-                let new_index = (n_subs as usize) + i;
-
-                let signal_id = sub.connect_user_changed(glib::clone!(
-                    #[weak]
-                    client,
-                    move |sub| {
-                        let cur = sub.topic_filter();
-                        let prev = prev_topic_filter.replace(cur.clone());
-
-                        let qos = sub.qos();
-
-                        if cur != prev {
-                            client.unsubscribe(prev.as_str());
-                        }
-
-                        if sub.subscribed() {
-                            glib::spawn_future_local(async move {
-                                client.subscribe_many(&[(cur, qos)]).await;
-                            });
-                        }
-                    }
-                ));
-
-                map.insert(sub.clone(), (new_index, signal_id));
-
-                new_subscriptions.push(sub.clone());
+        pub async fn update_subscription(
+            &self,
+            old: &MQTTySubscriptionMessagesSubscription,
+            new_model: &MQTTySubscriptionModel,
+        ) -> (bool, Option<String>) {
+            if self.contains_subscription_for_update(old, &new_model.topic_filter) {
+                return (false, None);
             }
 
-            if new_subscriptions.len() > 0 {
-                list_subs.splice(n_subs, 0, new_subscriptions.as_slice());
+            let old_topic = old.topic_filter();
+
+            let mut res = (true, None);
+
+            if old_topic != new_model.topic_filter {
+                let client = self.client();
+
+                res.1 = client.unsubscribe_many(&[old_topic]).await.err();
+            }
+
+            // This emits "::notify" signal, so we let the widgets handle it.
+            old.set_subscription_model(new_model);
+
+            res
+        }
+
+        pub async fn sync_all_subscriptions(&self) -> Result<(), String> {
+            let subs = self.subscriptions_vec();
+            let client = self.client();
+            let obj = self.obj();
+
+            if obj.connected() && subs.len() > 0 {
+                client
+                    .unsubscribe_many(
+                        subs.iter()
+                            .filter(|s| !s.user_subscribed())
+                            .map(|s| s.topic_filter())
+                            .collect::<Vec<_>>()
+                            .as_slice(),
+                    )
+                    .await?;
 
                 client
                     .subscribe_many(
-                        new_subscriptions
-                            .iter()
-                            .filter(|sub| sub.subscribed())
-                            .map(|sub| (sub.topic_filter(), sub.qos()))
+                        subs.iter()
+                            .filter(|s| s.user_subscribed())
+                            .map(|s| (s.topic_filter(), s.qos()))
                             .collect::<Vec<_>>()
                             .as_slice(),
                     )
@@ -159,48 +159,85 @@ mod imp {
             Ok(())
         }
 
+        pub async fn sync_subscription(
+            &self,
+            sub: &MQTTySubscriptionMessagesSubscription,
+        ) -> Result<(), String> {
+            let client = self.client();
+
+            if sub.user_subscribed() {
+                client
+                    .subscribe_many(&[(sub.topic_filter(), sub.qos())])
+                    .await
+            } else {
+                client.unsubscribe_many(&[sub.topic_filter()]).await
+            }
+        }
+
+        pub fn add_subscriptions(&self, subs: &[MQTTySubscriptionModel]) {
+            let list_subs = self.subscriptions();
+
+            let mut new_subscriptions = vec![];
+
+            for sub_model in subs {
+                if self.contains_subscription(&sub_model.topic_filter) {
+                    continue;
+                }
+
+                let sub = MQTTySubscriptionMessagesSubscription::new(sub_model);
+
+                new_subscriptions.push(sub);
+            }
+
+            list_subs.splice(list_subs.n_items(), 0, new_subscriptions.as_slice());
+        }
+
         pub async fn remove_subscription(
             &self,
-            sub: &MQTTyClientSubscription,
+            sub: &MQTTySubscriptionMessagesSubscription,
         ) -> Result<(), String> {
-            let mut map = self.subscriptions_map.borrow_mut();
-
-            let Some((index, signal_id)) = map.remove(sub) else {
-                return Ok(());
+            let list_subs = self.subscriptions();
+            let Some(index) = list_subs.find(sub) else {
+                return Err("Subscription already removed from this client wrapper".to_string());
             };
 
             let obj = self.obj();
 
-            obj.disconnect(signal_id);
-            self.subscriptions().remove(index as u32);
+            let mut res = Ok(());
 
-            let client = self.client();
-            client.unsubscribe(sub.topic_filter().as_str()).await
+            if obj.connected() {
+                let client = self.client();
+                res = client.unsubscribe_many(&[sub.topic_filter()]).await;
+            }
+
+            list_subs.remove(index);
+
+            res
         }
 
-        pub async fn resubscribe_client(&self) -> Result<(), String> {
+        pub async fn reset_session(&self) -> Result<(), String> {
             let obj = self.obj();
             let user_connected = obj.user_connected();
-
-            if !user_connected {
-                return Err("Cannot resubscribe client because it's disconnected".to_string());
-            }
 
             let client = self.client();
 
             client.delete_current_session(user_connected).await?;
 
-            client
-                .subscribe_many(
-                    obj.subscriptions()
-                        .into_iter()
-                        .map(|s| s.unwrap().downcast::<MQTTyClientSubscription>().unwrap())
-                        .filter(|s| s.subscribed())
-                        .map(|s| (s.topic_filter(), s.qos()))
-                        .collect::<Vec<_>>()
-                        .as_slice(),
-                )
-                .await
+            let subs = self.subscriptions_vec();
+
+            if user_connected {
+                client
+                    .subscribe_many(
+                        subs.into_iter()
+                            .filter(|s| s.user_subscribed())
+                            .map(|s| (s.topic_filter(), s.qos()))
+                            .collect::<Vec<_>>()
+                            .as_slice(),
+                    )
+                    .await?;
+            }
+
+            Ok(())
         }
 
         pub async fn sync_user_connected(&self) -> Result<(), String> {
@@ -215,23 +252,26 @@ mod imp {
             let client = self.client();
 
             if user_connected {
-                if !obj.wipe_queue_on_connect() {
-                    // User will receive queued messages when it connects.
-
-                    client.connect_client().await?;
-                } else {
+                if obj.wipe_queue_on_connect() {
                     // User doesn't want to receive queued messages on connect.
 
-                    self.resubscribe_client().await?;
-                }
+                    self.reset_session().await
+                } else {
+                    // User will receive queued messages when it connects.
 
-                Ok(())
+                    client.connect_client().await
+                }
             } else {
                 client.disconnect_client().await
             }
         }
 
-        pub fn update_connection_model(&self) {
+        pub async fn disconnect_client(&self) -> Result<(), String> {
+            self.client().disconnect_client().await
+        }
+
+        pub fn set_connection_model(&self, conn_model: &MQTTyConnectionModel) {
+            *self.connection_model.borrow_mut() = conn_model.clone();
             let obj = self.obj();
 
             let mut builder = MQTTyClient::builder()
@@ -274,17 +314,27 @@ mod imp {
                 #[weak]
                 store,
                 move |client, msg| {
-                    let Ok(()) = store.store_message(
+                    if let Err(e) = store.store_message(
                         &store::ConnectionModel {
                             url: client.url(),
                             client_id: client.client_id(),
                         },
                         msg,
-                    ) else {
-                        return;
-                    };
+                    ) {
+                        println!("Error while storing message: {e:?}");
+                    }
 
+                    // If the message could not be stored, doesn't matter, we still
+                    // send the signal.
                     obj.emit_by_name::<()>("message", &[msg]);
+                }
+            ));
+
+            client.connect_connection_state_changed(glib::clone!(
+                #[weak]
+                obj,
+                move |_, state| {
+                    obj.emit_by_name::<()>("connection-state-changed", &[&state]);
                 }
             ));
 
@@ -296,6 +346,42 @@ mod imp {
             //
             // Would need this method to be async, so I don't know if it's worthful.
             self.client.borrow_mut().replace(client);
+
+            // Syncing connected
+            client.notify_connected();
+
+            let props_to_notify = [
+                "name",
+                "client-id",
+                "url",
+                "username",
+                "password",
+                "mqtt-version",
+                "user-connected",
+                "wipe-queue-on-connect",
+            ];
+
+            for prop in props_to_notify {
+                obj.notify(prop);
+            }
+        }
+
+        pub fn get_recent_messages(
+            &self,
+            cursor_id: Option<i64>,
+            limit: i64,
+        ) -> Result<(Vec<MQTTyClientMessage>, Option<i64>), store::Error> {
+            let store = self.store();
+            let obj = self.obj();
+
+            store.get_recent_messages_for_connection(
+                &store::ConnectionModel {
+                    client_id: obj.client_id(),
+                    url: obj.url(),
+                },
+                cursor_id,
+                limit,
+            )
         }
 
         fn store(&self) -> &Rc<MQTTySubscriptionMessagesStore> {
@@ -304,8 +390,15 @@ mod imp {
 
         fn subscriptions(&self) -> gio::ListStore {
             self.subscriptions
-                .get_or_init(|| gio::ListStore::new::<MQTTyClientSubscription>())
+                .get_or_init(|| gio::ListStore::new::<MQTTySubscriptionMessagesSubscription>())
                 .clone()
+        }
+
+        fn subscriptions_vec(&self) -> Vec<MQTTySubscriptionMessagesSubscription> {
+            self.subscriptions()
+                .iter::<_>()
+                .map(|s| s.unwrap())
+                .collect::<Vec<_>>()
         }
 
         fn client(&self) -> MQTTyClient {
@@ -319,8 +412,7 @@ glib::wrapper! {
     /// MQTTySubscriptionMessagesStore, and then redirects them to "::message"
     /// signal of this object after succesfully storing them, as well as
     /// providing an API for retrieving messages from the store, getting
-    /// client data and subscriptions, in the form of MQTTyClientConnection
-    /// and MQTTyClientSubscription structs, and redirects the ":connected"
+    /// client data and subscriptions, and redirects the ":connected"
     /// property from the underlying client to this wrapper property.
     ///
     /// This class is supposed to be used only by widgets to perform all of the
@@ -333,48 +425,149 @@ impl MQTTySubscriptionMessagesClientWrapper {
      * Visibility is `pub(super)` so that it can only be constructed by the controller
      */
     pub(super) fn new(
-        conn: &ClientWrapperConnectionModel,
+        conn: &MQTTyConnectionModel,
         store: Rc<MQTTySubscriptionMessagesStore>,
     ) -> Self {
         let o: Self = glib::Object::new();
 
         let im = o.imp();
 
-        *im.connection_model.borrow_mut() = conn.clone();
+        im.store
+            .set(store)
+            .unwrap_or_else(|_| panic!("Store already set"));
 
-        im.store.set(store);
-
-        o.update_connection_model();
+        o.set_connection_model(conn);
 
         o
+    }
+
+    pub fn connection_model(&self) -> MQTTyConnectionModel {
+        self.imp().connection_model.borrow().clone()
     }
 
     /// This updates the wrapped client with the new props,
     /// it disconnects and drops the previous client and creates a new one
     /// which can be connected/disconnected by setting ":user-connected"
     /// and then calling self.sync_user_connected()
-    pub fn update_connection_model(&self) {
-        self.imp().update_connection_model();
+    ///
+    /// Additionally it emits all of the "::notify" signals that correspond
+    /// to the connection_model.
+    pub fn set_connection_model(&self, conn_model: &MQTTyConnectionModel) {
+        self.imp().set_connection_model(conn_model);
     }
 
     pub fn contains_subscription(&self, topic_filter: &str) -> bool {
         self.imp().contains_subscription(topic_filter)
     }
 
-    pub async fn add_subscriptions(&self, subs: &[MQTTyClientSubscription]) -> Result<(), String> {
-        self.imp().add_subscriptions(subs).await
+    pub fn contains_subscription_for_update(
+        &self,
+        old: &MQTTySubscriptionMessagesSubscription,
+        new_topic_filter: &str,
+    ) -> bool {
+        self.imp()
+            .contains_subscription_for_update(old, new_topic_filter)
     }
 
-    pub async fn remove_subscription(&self, sub: &MQTTyClientSubscription) -> Result<(), String> {
+    /// Adds subscriptions
+    ///
+    /// It doesn't send UN/SUBSCRIBE packets to the broker, to do that call
+    /// sync_subsciption() or sync_all_subscriptions()
+    pub fn add_subscriptions(&self, subs: &[MQTTySubscriptionModel]) {
+        self.imp().add_subscriptions(subs);
+    }
+
+    pub async fn remove_subscription(
+        &self,
+        sub: &MQTTySubscriptionMessagesSubscription,
+    ) -> Result<(), String> {
         self.imp().remove_subscription(sub).await
     }
 
-    pub async fn resubscribe_client(&self) -> Result<(), String> {
-        self.imp().resubscribe_client().await
+    /// It resets the current session.
+    ///
+    /// This essentially performs:
+    ///
+    /// 1. Session deletion (if there is any).
+    /// 2. Connects the client (if ":user-connected" was `true`).
+    /// 3. And then sends the subscriptions that have ":start-subscribed" set to `true`.
+    ///
+    /// This causes any previous subscription to be deleted, this should be used if
+    /// the user is receiving messages from a topic it is no suscribed to,
+    /// so the only method they can call is this, in order to delete those subscriptions.
+    pub async fn reset_session(&self) -> Result<(), String> {
+        self.imp().reset_session().await
     }
 
     /// It connects/disconnects the client depending on ":user-connected" prop
     pub async fn sync_user_connected(&self) -> Result<(), String> {
         self.imp().sync_user_connected().await
+    }
+
+    /// Tries to update old_sub with new_model and send the corresponding
+    /// UNSUBSCRIBE packet if topic filter was different than the previous one.
+    ///
+    /// Just like add_subscriptions(), this method doesn't send the subscriptions,
+    /// to do that call sync_subscription() method.
+    ///
+    /// Returns (updated, unsub_err) tuple, the first tuple's entry indicates if the
+    /// subscription was succesfully updated and it was not a duplicate, and the
+    /// second indicates the UNSUBSCRIBE packet error if it's Some(...)
+    pub async fn update_subscription(
+        &self,
+        old_sub: &MQTTySubscriptionMessagesSubscription,
+        new_model: &MQTTySubscriptionModel,
+    ) -> (bool, Option<String>) {
+        self.imp().update_subscription(old_sub, new_model).await
+    }
+
+    pub async fn sync_subscription(
+        &self,
+        sub: &MQTTySubscriptionMessagesSubscription,
+    ) -> Result<(), String> {
+        self.imp().sync_subscription(sub).await
+    }
+
+    /// Use this when the client is first created and after adding all
+    /// subscriptions, e.g. when the app starts.
+    ///
+    /// If the user adds a single subscription, prefer to use sync_subscription()
+    /// method.
+    pub async fn sync_all_subscriptions(&self) -> Result<(), String> {
+        self.imp().sync_all_subscriptions().await
+    }
+
+    pub fn get_recent_messages(
+        &self,
+        cursor_id: Option<i64>,
+        limit: i64,
+    ) -> Result<(Vec<MQTTyClientMessage>, Option<i64>), store::Error> {
+        self.imp().get_recent_messages(cursor_id, limit)
+    }
+
+    pub(super) async fn disconnect_client(&self) -> Result<(), String> {
+        self.imp().disconnect_client().await
+    }
+
+    pub fn connect_message(
+        &self,
+        cb: impl Fn(&Self, MQTTyClientMessage) + 'static,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "message",
+            false,
+            glib::closure_local!(|o: _, msg: _| cb(o, msg)),
+        )
+    }
+
+    pub fn connect_connection_state_changed(
+        &self,
+        cb: impl Fn(&Self, MQTTyClientConnectionState) + 'static,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "connection-state-changed",
+            false,
+            glib::closure_local!(|o: _, state: _| cb(o, state)),
+        )
     }
 }
