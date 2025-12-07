@@ -13,18 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod connection;
 mod message;
-mod subscription;
-mod subscriptions_data;
 
-pub use connection::MQTTyClientConnection;
 pub use message::MQTTyClientMessage;
-pub use subscription::MQTTyClientSubscription;
-pub use subscriptions_data::MQTTyClientSubscriptionsData;
 
 use std::cell::{Cell, OnceCell, RefCell};
 use std::sync::LazyLock;
+use std::time;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -41,7 +36,7 @@ pub enum MQTTyClientVersion {
     V5,
 }
 
-#[derive(Default, Clone, Copy, glib::Enum, Serialize)]
+#[derive(Default, Clone, Copy, glib::Enum, PartialEq, Serialize)]
 #[enum_type(name = "MQTTyClientQos")]
 pub enum MQTTyClientQos {
     #[default]
@@ -58,6 +53,33 @@ impl MQTTyClientQos {
             MQTTyClientQos::Qos2 => gettext("QoS 2"),
         }
     }
+}
+
+#[derive(Clone, Copy, glib::Enum, PartialEq, Debug)]
+#[enum_type(name = "MQTTyClientConnectionState")]
+pub enum MQTTyClientConnectionState {
+    /// Emitted when the client connects with the broker.
+    Connected,
+    /// Emitted when the client is disconnected gracefully, this can be either client side
+    /// or server side (MQTT V5 server disconnect packet).
+    Disconnected,
+    /// Emitted when the connection is lost, automatic reconnection is inmediately
+    /// performed.
+    Reconnecting,
+    /// Emitted when the client has reconnected too many times without success.
+    ///
+    /// Note that this will be emitted after `Self::Reconnecting` is emitted, so
+    /// the order would be `Self::Reconnecting -> after too many tries -> Self::ReconnectFailure`
+    ///
+    /// Client won't reconnect after this is emitted. You can still reconnect by calling
+    /// `connect_client()` method.
+    ReconnectFailure,
+    /// Emitted when the session is taken over due to duplicated client_id.
+    ///
+    /// Client won't reconnect after this is emitted. You can still reconnect by calling
+    /// `connect_client()` method, though you will need to change the current client_id
+    /// to avoid this again.
+    SessionTakenOver,
 }
 
 mod imp {
@@ -88,6 +110,8 @@ mod imp {
         #[property(get)]
         connected: Cell<bool>,
 
+        in_reconnect: Cell<bool>,
+
         client: OnceCell<paho::AsyncClient>,
     }
 
@@ -116,6 +140,133 @@ mod imp {
                 Ok(c) => c,
             };
 
+            // Setting connected prop according to connection state
+            obj.connect_connection_state_changed(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                move |_, state| {
+                    println!("CONNECTION STATE CHANGED: {state:?}");
+
+                    let connected = match state {
+                        MQTTyClientConnectionState::Connected => true,
+                        MQTTyClientConnectionState::Disconnected
+                        | MQTTyClientConnectionState::Reconnecting => false,
+                        _ => return,
+                    };
+
+                    this.set_connected(connected);
+                }
+            ));
+
+            // We cannot use glib::clone!(...) on self because there would
+            // always be a reference inside of the spawned GLib futures,
+            // otherwise the client will never drop.
+            let weak_this = self.downgrade();
+
+            // Receiving the connection lost signal and handling automatic reconnect,
+            // as well as applying the heuristics for detecting session takeovers and other
+            // network-related problems.
+            let (connection_lost_tx, connection_lost_rx) = async_channel::bounded(1);
+
+            client.set_connection_lost_callback(move |_| {
+                let _ = connection_lost_tx.send_blocking(());
+            });
+
+            glib::spawn_future_local(glib::clone!(
+                #[strong]
+                weak_this,
+                async move {
+                    // Variables for detecting session takeover
+                    let window_secs = 60;
+                    let max_threshold = 10;
+                    let mut timestamps: Vec<time::Instant> = vec![];
+
+                    loop {
+                        let Ok(_) = connection_lost_rx.recv().await else {
+                            return;
+                        };
+
+                        // Upgrading after receiving async channel.
+                        let Some(this) = weak_this.upgrade() else {
+                            return;
+                        };
+                        let obj = this.obj();
+
+                        this.in_reconnect.set(true);
+                        obj.emit_by_name::<()>(
+                            "connection-state-changed",
+                            &[&MQTTyClientConnectionState::Reconnecting],
+                        );
+
+                        let now = time::Instant::now();
+                        timestamps.push(now);
+
+                        let cutpoint = now - time::Duration::from_secs(window_secs);
+                        timestamps.retain(|ts| *ts > cutpoint);
+
+                        if timestamps.len() >= max_threshold {
+                            // Multiple connection losses in a short amount of time.
+                            //
+                            // v3.x Heuristic: Assume session take over.
+                            //
+                            // v5 Heuristic: Assume network problems.
+
+                            timestamps.clear();
+                            this.in_reconnect.set(false);
+
+                            let state = match obj.mqtt_version() {
+                                MQTTyClientVersion::V3X => {
+                                    MQTTyClientConnectionState::SessionTakenOver
+                                }
+                                MQTTyClientVersion::V5 => {
+                                    MQTTyClientConnectionState::ReconnectFailure
+                                }
+                            };
+                            obj.emit_by_name::<()>("connection-state-changed", &[&state]);
+
+                            continue;
+                        }
+
+                        // We put our automatic reconnect implementation here,
+                        // we don't use Paho's because we need to detect network
+                        // failure (which is not exposed by Paho).
+
+                        let res = backoff::future::retry(
+                            backoff::ExponentialBackoffBuilder::new()
+                                .with_initial_interval(time::Duration::from_secs(1))
+                                .with_max_elapsed_time(Some(time::Duration::from_secs(5 * 60)))
+                                .with_max_interval(time::Duration::from_secs(60))
+                                .with_multiplier(2.0)
+                                .build(),
+                            || async {
+                                let in_reconnect = this.in_reconnect.get();
+
+                                if in_reconnect {
+                                    this.client()
+                                        .reconnect()
+                                        .await
+                                        .map(|_| ())
+                                        .map_err(|e| backoff::Error::transient(e))
+                                } else {
+                                    // User called `self.disconnect_client()`, we stop reconnections.
+                                    Ok(())
+                                }
+                            },
+                        )
+                        .await;
+
+                        this.in_reconnect.set(false);
+
+                        if let Err(_) = res {
+                            obj.emit_by_name::<()>(
+                                "connection-state-changed",
+                                &[&MQTTyClientConnectionState::ReconnectFailure],
+                            );
+                        }
+                    }
+                }
+            ));
+
             // Receiving the connected status, and redirecting it to the
             // property/signal logic
             let (connected_tx, connected_rx) = async_channel::bounded(1);
@@ -124,39 +275,41 @@ mod imp {
                 #[strong]
                 connected_tx,
                 move |_| {
-                    connected_tx.send_blocking(true);
+                    let _ = connected_tx.send_blocking(MQTTyClientConnectionState::Connected);
                 }
             ));
 
+            // According to Paho, this callback only works for MQTT v5, for when
+            // the server is the one who disconnects.
             client.set_disconnected_callback(glib::clone!(
                 #[strong]
                 connected_tx,
-                move |_, _, _| {
-                    connected_tx.send_blocking(false);
-                }
-            ));
-
-            client.set_connection_lost_callback(glib::clone!(
-                #[strong]
-                connected_tx,
-                move |_| {
-                    connected_tx.send_blocking(false);
+                move |_, _, rc| {
+                    let state = if rc == paho::ReasonCode::SessionTakenOver {
+                        MQTTyClientConnectionState::SessionTakenOver
+                    } else {
+                        MQTTyClientConnectionState::Disconnected
+                    };
+                    let _ = connected_tx.send_blocking(state);
                 }
             ));
 
             glib::spawn_future_local(glib::clone!(
-                #[weak]
-                obj,
-                #[weak(rename_to = this)]
-                self,
+                #[strong]
+                weak_this,
                 async move {
                     loop {
-                        let Ok(connected) = connected_rx.recv().await else {
+                        let Ok(state) = connected_rx.recv().await else {
                             return;
                         };
 
-                        this.connected.set(connected);
-                        obj.notify_connected();
+                        // Upgrading after receiving async channel.
+                        let up = weak_this.upgrade();
+                        let Some(obj) = up.as_ref().map(|this| this.obj()) else {
+                            return;
+                        };
+
+                        obj.emit_by_name::<()>("connection-state-changed", &[&state]);
                     }
                 }
             ));
@@ -172,11 +325,17 @@ mod imp {
             });
 
             glib::spawn_future_local(glib::clone!(
-                #[weak]
-                obj,
+                #[strong]
+                weak_this,
                 async move {
                     loop {
                         let Ok(msg) = message_rx.recv().await else {
+                            return;
+                        };
+
+                        // Upgrading after receiving async channel
+                        let up = weak_this.upgrade();
+                        let Some(obj) = up.as_ref().map(|this| this.obj()) else {
                             return;
                         };
 
@@ -205,9 +364,14 @@ mod imp {
 
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
-                vec![Signal::builder("message")
-                    .param_types([MQTTyClientMessage::static_type()])
-                    .build()]
+                vec![
+                    Signal::builder("message")
+                        .param_types([MQTTyClientMessage::static_type()])
+                        .build(),
+                    Signal::builder("connection-state-changed")
+                        .param_types([MQTTyClientConnectionState::static_type()])
+                        .build(),
+                ]
             });
             &*SIGNALS
         }
@@ -227,35 +391,42 @@ mod imp {
                 return Ok(());
             }
 
+            if self.in_reconnect.get() {
+                return Err("Client is automatically reconnecting".to_string());
+            }
+
             let mqtt_version = obj.mqtt_version();
 
             let mut opts = paho::ConnectOptionsBuilder::with_mqtt_version(mqtt_version);
-            let mut mut_opts = opts.ssl_options(Default::default());
 
-            mut_opts = if let Some(username) = obj.username() {
-                mut_opts.user_name(username)
+            let mut opts = opts.ssl_options(Default::default());
+
+            opts = if let Some(username) = obj.username() {
+                opts.user_name(username)
             } else {
-                mut_opts
+                opts
             };
 
-            mut_opts = if let Some(password) = obj.password() {
-                mut_opts.password(password)
+            opts = if let Some(password) = obj.password() {
+                opts.password(password)
             } else {
-                mut_opts
+                opts
             };
 
-            let mut opts = mut_opts.finalize();
+            let mut opts = opts.finalize();
 
             let clean_start = obj.clean_start();
 
             opts.set_clean_start(clean_start);
             opts.set_clean_session(clean_start);
 
-            client
+            let res = client
                 .connect(Some(opts))
                 .await
                 .map(|res| println!("CONNECTION SERVER RESPONSE: {res:?}"))
-                .map_err(|e| e.to_string())
+                .map_err(|e| e.to_string());
+
+            res
         }
 
         pub async fn disconnect_client(&self) -> Result<(), String> {
@@ -263,15 +434,26 @@ mod imp {
 
             let obj = self.obj();
 
-            if !obj.connected() {
+            if !self.in_reconnect.get() && !obj.connected() {
                 return Ok(());
             }
 
-            client
+            self.in_reconnect.set(false);
+
+            let res = client
                 .disconnect(None)
                 .await
                 .map(|res| println!("DISCONNECTION SERVER RESPONSE: {res:?}"))
-                .map_err(|e| e.to_string())
+                .map_err(|e| e.to_string());
+
+            // Above call can only fail if the client was disconnected, at any other
+            // case, it will just disconnect, so no need to check `res`.
+            obj.emit_by_name::<()>(
+                "connection-state-changed",
+                &[&MQTTyClientConnectionState::Disconnected],
+            );
+
+            res
         }
 
         pub async fn publish(&self, message: &MQTTyClientMessage) -> Result<(), String> {
@@ -287,6 +469,10 @@ mod imp {
             &self,
             topics_qoss: &[(String, MQTTyClientQos)],
         ) -> Result<(), String> {
+            if topics_qoss.len() == 0 {
+                return Err("SUBSCRIBE protocol violation: 0 topics subscribed".to_string());
+            }
+
             let client = self.client();
 
             client
@@ -307,11 +493,15 @@ mod imp {
                 .map_err(|e| e.to_string())
         }
 
-        pub async fn unsubscribe(&self, topic: &str) -> Result<(), String> {
+        pub async fn unsubscribe_many(&self, topics: &[String]) -> Result<(), String> {
+            if topics.len() == 0 {
+                return Err("UNSUBSCRIBE protocol violation: 0 topics unsubscribed".to_string());
+            }
+
             let client = self.client();
 
             client
-                .unsubscribe(topic)
+                .unsubscribe_many(topics)
                 .await
                 .map(|res| println!("UNSUBSCRIPTION SERVER RESPONSE: {res:?}"))
                 .map_err(|e| e.to_string())
@@ -325,10 +515,14 @@ mod imp {
             if was_connected {
                 self.disconnect_client().await?;
 
-                if original_clean_start {
+                if original_clean_start && reconnect_after {
                     // Was already in a clean session, session is dropped once the client is
                     // disconnected, we just reconnect and return.
                     return self.connect_client().await;
+                }
+
+                if !reconnect_after {
+                    return Ok(());
                 }
             }
 
@@ -349,6 +543,17 @@ mod imp {
             }
 
             Ok(())
+        }
+
+        fn set_connected(&self, connected: bool) {
+            let obj = self.obj();
+
+            if obj.connected() == connected {
+                return;
+            }
+
+            self.connected.set(connected);
+            obj.notify_connected();
         }
     }
 }
@@ -433,13 +638,13 @@ impl MQTTyClient {
         self.imp().subscribe_many(topics_qoss).await
     }
 
-    pub async fn unsubscribe(&self, topic: &str) -> Result<(), String> {
-        self.imp().unsubscribe(topic).await
+    pub async fn unsubscribe_many(&self, topics: &[String]) -> Result<(), String> {
+        self.imp().unsubscribe_many(topics).await
     }
 
     /// Deletes the current session between the client and the server,
     /// effectively deleting any subscriptions that the client had.
-    /// It performs reconnection if the client was previously connected.
+    /// It performs reconnection if reconnect_after is true.
     ///
     /// It is specified in the MQTT spec how to perform this.
     ///
@@ -463,6 +668,17 @@ impl MQTTyClient {
             "message",
             false,
             glib::closure_local!(move |o: &Self, msg: &MQTTyClientMessage| cb(o, msg)),
+        )
+    }
+
+    pub fn connect_connection_state_changed(
+        &self,
+        cb: impl Fn(&Self, MQTTyClientConnectionState) + 'static,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "connection-state-changed",
+            false,
+            glib::closure_local!(move |o: _, state: _| cb(o, state)),
         )
     }
 }
