@@ -261,7 +261,8 @@ mod imp {
 glib::wrapper! {
     pub struct MQTTyWindow(ObjectSubclass<imp::MQTTyWindow>)
         @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow,
-        @implements gio::ActionMap, gio::ActionGroup, gtk::Root;
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Native,
+            gtk::Root, gtk::ShortcutManager, gio::ActionGroup, gio::ActionMap;
 }
 
 impl MQTTyWindow {

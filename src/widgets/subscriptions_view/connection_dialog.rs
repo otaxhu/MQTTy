@@ -142,7 +142,7 @@ impl MQTTySubscriptionsConnectionDialog {
         self,
         parent: &impl IsA<gtk::Widget>,
     ) -> Option<MQTTyConnectionModel> {
-        match AlertDialogExtManual::choose_future(self.clone(), parent)
+        match AlertDialogExtManual::choose_future(self.clone(), Some(parent))
             .await
             .as_ref()
         {
