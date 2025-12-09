@@ -22,6 +22,7 @@ mod config;
 mod content_type;
 mod display_mode;
 mod gsettings;
+mod l10n;
 mod main_window;
 mod models;
 mod objects;

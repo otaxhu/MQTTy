@@ -20,7 +20,8 @@ use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{gio, glib, pango};
 
-use crate::client::{MQTTyClientQos, MQTTyClientSubscription};
+use crate::client::MQTTyClientQos;
+use crate::models::MQTTySubscriptionModel;
 use crate::utils;
 
 mod imp {
@@ -33,8 +34,8 @@ mod imp {
     pub struct MQTTySubscriptionDialog {
         #[property(name = "topic", get, set, type = String, member = topic_filter)]
         #[property(name = "qos", get, set, type = MQTTyClientQos, member = qos, builder(Default::default()))]
-        #[property(name = "subscribed", get, set, type = bool, member = subscribed)]
-        pub subscription: RefCell<MQTTyClientSubscription>,
+        #[property(name = "subscribed", get, set, type = bool, member = user_subscribed)]
+        pub subscription: RefCell<MQTTySubscriptionModel>,
 
         #[property(get, set)]
         is_valid: Cell<bool>,
@@ -94,19 +95,29 @@ mod imp {
 
             obj.insert_action_group("subscription-dialog", Some(&group));
 
-            adw::StyleManager::default().connect_accent_color_notify(glib::clone!(
-                #[weak(rename_to = obj)]
+            let man = adw::StyleManager::default();
+
+            man.connect_accent_color_notify(glib::clone!(
+                #[weak(rename_to = this)]
                 self,
                 move |_| {
-                    obj.update_topic_row_attrs();
+                    this.update_topic_row_attrs();
+                }
+            ));
+
+            man.connect_dark_notify(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                move |_| {
+                    this.update_topic_row_attrs();
                 }
             ));
 
             obj.connect_topic_notify(glib::clone!(
-                #[weak(rename_to = obj)]
+                #[weak(rename_to = this)]
                 self,
                 move |_| {
-                    obj.update_topic_row_attrs();
+                    this.update_topic_row_attrs();
                 }
             ));
         }
@@ -126,7 +137,7 @@ mod imp {
                 }
                 attributes += &format!(
                     "{start} {end} weight bold,{start} {end} foreground {}",
-                    utils::get_accent_color_as_hex(),
+                    utils::get_fg_accent_color_as_hex(),
                     start = i,
                     end = i + 1,
                 );
@@ -151,19 +162,19 @@ impl MQTTySubscriptionDialog {
             .build()
     }
 
-    pub fn new_edit(sub: &MQTTyClientSubscription) -> Self {
+    pub fn new_edit(sub: &MQTTySubscriptionModel) -> Self {
         glib::Object::builder()
             .property("heading", gettext("Edit subscription"))
             .property("topic", &sub.topic_filter)
             .property("qos", sub.qos)
-            .property("subscribed", sub.subscribed)
+            .property("subscribed", sub.user_subscribed)
             .build()
     }
 
     pub async fn choose_future(
         self,
         parent: &impl IsA<gtk::Widget>,
-    ) -> Option<MQTTyClientSubscription> {
+    ) -> Option<MQTTySubscriptionModel> {
         match AlertDialogExtManual::choose_future(self.clone(), parent)
             .await
             .as_ref()

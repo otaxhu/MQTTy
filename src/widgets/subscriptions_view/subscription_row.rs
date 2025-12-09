@@ -13,16 +13,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::{Cell, RefCell};
-use std::sync::LazyLock;
+use std::cell::OnceCell;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use glib::subclass::Signal;
 use gtk::glib;
 
-use crate::client::MQTTyClientSubscription;
+use crate::application::MQTTyApplication;
+use crate::client::MQTTyClientQos;
+use crate::services::subscription_messages::{
+    MQTTySubscriptionMessagesClientWrapper, MQTTySubscriptionMessagesSubscription,
+};
 use crate::utils;
+use crate::widgets::MQTTySubscriptionDialog;
+
+use super::toasts;
 
 mod imp {
 
@@ -32,11 +37,14 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/subscriptions_view/subscription_row.ui")]
     #[properties(wrapper_type = super::MQTTySubscriptionRow)]
     pub struct MQTTySubscriptionRow {
-        #[property(get, set)]
-        topic: RefCell<String>,
+        #[property(get, construct_only)]
+        client: OnceCell<MQTTySubscriptionMessagesClientWrapper>,
 
-        #[property(get, set)]
-        subscribed: Cell<bool>,
+        #[property(get, construct_only)]
+        subscription: OnceCell<MQTTySubscriptionMessagesSubscription>,
+
+        #[template_child]
+        subscribed_switch: TemplateChild<gtk::Switch>,
     }
 
     #[glib::object_subclass]
@@ -49,11 +57,50 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.install_action("subscription-row.edit", None, |this, _, _| {
-                this.emit_by_name::<()>("edit-request", &[]);
+                let client = this.client();
+                let sub = this.subscription();
+
+                let im = this.imp();
+                let subscribed_switch = &im.subscribed_switch;
+
+                glib::spawn_future_local(glib::clone!(
+                    #[weak]
+                    subscribed_switch,
+                    async move {
+                        let app = MQTTyApplication::get_singleton();
+                        let window = app.active_window().unwrap();
+
+                        let dialog = MQTTySubscriptionDialog::new_edit(&sub.subscription_model());
+
+                        let Some(new_model) = dialog.choose_future(&window).await else {
+                            return;
+                        };
+
+                        subscribed_switch.set_sensitive(false);
+
+                        match client.update_subscription(&sub, &new_model).await {
+                            (false, _) => {
+                                toasts::subscription_already_exists();
+                            }
+                            // Updated succesfully
+                            (true, None) => {}
+                            _ => {}
+                        }
+
+                        subscribed_switch.set_sensitive(true);
+                    }
+                ));
             });
 
             klass.install_action("subscription-row.delete", None, |this, _, _| {
-                this.emit_by_name::<()>("delete-request", &[]);
+                let client = this.client();
+                let sub = this.subscription();
+
+                glib::spawn_future_local(async move {
+                    // TODO: Show an AlertDialog to confirm deletion
+
+                    let _ = client.remove_subscription(&sub).await;
+                });
             });
 
             klass.bind_template();
@@ -71,7 +118,50 @@ mod imp {
 
             let obj = self.obj();
 
-            obj.connect_topic_notify(glib::clone!(
+            let subscribed_switch = &self.subscribed_switch;
+
+            let sub = obj.subscription();
+            let client = obj.client();
+
+            sub.bind_property("user-subscribed", &**subscribed_switch, "active")
+                .sync_create()
+                .bidirectional()
+                .build();
+
+            sub.bind_property("qos", &*obj, "subtitle")
+                .sync_create()
+                .transform_to(|_, qos: MQTTyClientQos| Some(qos.translated()))
+                .build();
+
+            sub.connect_user_subscribed_notify(glib::clone!(
+                #[weak]
+                subscribed_switch,
+                #[weak]
+                client,
+                #[weak]
+                obj,
+                move |sub| {
+                    let subscribed_switch_has_focus = subscribed_switch.has_focus();
+
+                    subscribed_switch.set_sensitive(false);
+
+                    if subscribed_switch_has_focus {
+                        obj.grab_focus();
+                    }
+
+                    glib::spawn_future_local(glib::clone!(
+                        #[weak]
+                        sub,
+                        async move {
+                            let _ = client.sync_subscription(&sub).await;
+
+                            subscribed_switch.set_sensitive(true);
+                        }
+                    ));
+                }
+            ));
+
+            sub.connect_topic_filter_notify(glib::clone!(
                 #[weak(rename_to = this)]
                 self,
                 move |_| {
@@ -79,23 +169,25 @@ mod imp {
                 }
             ));
 
-            adw::StyleManager::default().connect_accent_color_notify(glib::clone!(
+            let man = adw::StyleManager::default();
+
+            man.connect_accent_color_notify(glib::clone!(
                 #[weak(rename_to = this)]
                 self,
                 move |_| {
                     this.update_title_pango();
                 }
             ));
-        }
 
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
-                vec![
-                    Signal::builder("edit-request").build(),
-                    Signal::builder("delete-request").build(),
-                ]
-            });
-            &*SIGNALS
+            man.connect_dark_notify(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                move |_| {
+                    this.update_title_pango();
+                }
+            ));
+
+            self.update_title_pango();
         }
     }
     impl WidgetImpl for MQTTySubscriptionRow {}
@@ -111,11 +203,11 @@ mod imp {
 
             let obj = self.obj();
 
-            let escaped_topic = glib::markup_escape_text(&obj.topic());
+            let escaped_topic = glib::markup_escape_text(&obj.subscription().topic_filter());
 
             let open_pango_tag = format!(
                 "<span foreground='{}' weight='bold'>",
-                utils::get_accent_color_as_hex()
+                utils::get_fg_accent_color_as_hex()
             );
 
             obj.set_title(
@@ -133,31 +225,14 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Actionable;
 }
 
-impl From<&MQTTyClientSubscription> for MQTTySubscriptionRow {
-    fn from(value: &MQTTyClientSubscription) -> Self {
-        glib::Object::builder()
-            .property("topic", &value.topic_filter)
-            .property("subtitle", value.qos.translated())
-            .property("subscribed", value.subscribed)
-            .property("use-markup", true)
-            .build()
-    }
-}
-
 impl MQTTySubscriptionRow {
-    pub fn connect_edit_request(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "edit-request",
-            false,
-            glib::closure_local!(|o: &Self| cb(o)),
-        )
-    }
-
-    pub fn connect_delete_request(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "delete-request",
-            false,
-            glib::closure_local!(|o: &Self| cb(o)),
-        )
+    pub fn new(
+        sub: &MQTTySubscriptionMessagesSubscription,
+        client: &MQTTySubscriptionMessagesClientWrapper,
+    ) -> Self {
+        glib::Object::builder()
+            .property("subscription", sub)
+            .property("client", client)
+            .build()
     }
 }

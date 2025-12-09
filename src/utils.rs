@@ -12,12 +12,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-use std::{borrow::Cow, ffi::CStr};
-
 use adw::prelude::*;
 use gtk::{gio, glib};
-use icu::datetime::DateTimeFormatter;
 
 use crate::client::{MQTTyClientQos, MQTTyClientVersion};
 
@@ -96,8 +92,11 @@ pub fn connect_qos_action(
 
 /// Important:
 ///
-/// libadwaita must be initialized before calling this function
-pub fn get_accent_color_as_hex() -> &'static str {
+/// You need to call this to update your fg accent color when adw::StyleManager
+/// notifies ":accent-color" and ":dark" property changes
+///
+/// This fg accent color is dark-mode aware.
+pub fn get_fg_accent_color_as_hex() -> &'static str {
     let man = adw::StyleManager::default();
 
     let color = if man.is_system_supports_accent_colors() {
@@ -108,98 +107,40 @@ pub fn get_accent_color_as_hex() -> &'static str {
         adw::AccentColor::Purple
     };
 
-    // See: https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1-latest/enum.AccentColor.html
-    match color {
-        adw::AccentColor::Blue => "#3584e4",
-        adw::AccentColor::Teal => "#2190a4",
-        adw::AccentColor::Green => "#3a944a",
-        adw::AccentColor::Yellow => "#c88800",
-        adw::AccentColor::Orange => "#ed5b00",
-        adw::AccentColor::Red => "#e62d42",
-        adw::AccentColor::Pink => "#d56199",
-        adw::AccentColor::Purple => "#9141ac",
-        adw::AccentColor::Slate => "#6f8396",
+    let is_dark = man.is_dark();
+
+    // See: https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/css-variables.html#accent-colors
+    let (light_color, dark_color) = match color {
+        adw::AccentColor::Blue => ("#0461be", "#81d0ff"),
+        adw::AccentColor::Teal => ("#007184", "#7bdff4"),
+        adw::AccentColor::Green => ("#15772e", "#8de698"),
+        adw::AccentColor::Yellow => ("#905300", "#ffc057"),
+        adw::AccentColor::Orange => ("#b62200", "#ff9c5b"),
+        adw::AccentColor::Red => ("#c00023", "#ff888c"),
+        adw::AccentColor::Pink => ("#a2326c", "#ffa0d8"),
+        adw::AccentColor::Purple => ("#8939a4", "#fba7ff"),
+        adw::AccentColor::Slate => ("#526678", "#bbd1e5"),
         c => panic!("Invalid color: {c:?}"),
-    }
-}
-
-// Localization-related functions
-
-fn locale_posix_to_bcp47(posix: &str) -> Option<Cow<'_, str>> {
-    let main_part = posix.split('.').next()?.split('@').next()?;
-
-    let mut parts = main_part.split('_');
-    let lang = parts.next()?;
-    let region = parts.next();
-
-    Some(match region {
-        Some(r) => Cow::Owned(format!("{lang}-{r}")),
-        None => Cow::Borrowed(lang),
-    })
-}
-
-#[cfg(target_os = "windows")]
-fn getlocale() -> Option<String> {
-    // We need the POSIX form, so we are calling this instead of the MS setlocale one
-    //
-    // See:
-    // https://gitlab.gnome.org/GNOME/glib/-/blob/main/glib/gwin32.c#L94
-    Some(glib::win32_getlocale().into())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn getlocale() -> Option<String> {
-    // SAFETY:
-    //
-    // setlocale returned string is read-only and owned by the libc, here we are cloning it
-    // if it's not NULL, so it is safe.
-    //
-    // setlocale is also marked as MT-Unsafe (in Linux), but I think we are not
-    // calling from a different thread than the main one.
-    //
-    // POSIX Reference:
-    //
-    // > The application shall not modify the string returned which may be
-    // > overwritten by a subsequent call to setlocale().
-    //
-    // https://pubs.opengroup.org/onlinepubs/009695399/functions/setlocale.html
-    unsafe {
-        let res = gettext_sys::setlocale(gettextrs::LocaleCategory::LcAll as i32, std::ptr::null());
-        if res.is_null() {
-            None
-        } else {
-            CStr::from_ptr(res).to_str().ok().map(|s| s.to_owned())
-        }
-    }
-}
-
-pub fn get_icu_date_time_formatter() -> DateTimeFormatter<icu::datetime::fieldsets::YMDT> {
-    // We rename so that xgettext command doesn't try to translate the call we
-    // are doing below
-    use gettextrs::gettext as _private_gettext;
-
-    let header = _private_gettext("");
-
-    // Following almost the same logic from:
-    //
-    // https://gitlab.gnome.org/GNOME/glib/-/blob/main/glib/ggettext.c#L313
-    let lang = if header.is_empty() {
-        // If it's empty, that means that no language was loaded for the current locale.
-        // We default to "en"
-        Cow::Borrowed("en")
-    } else {
-        // If it's not empty, a language was loaded for the current locale, we query it.
-        let current_locale = getlocale().expect("current locale could not be determined");
-
-        // FIXME: handle "C" minimal locale case?? It should be impossible to happen
-        // since a language was loaded by gettext
-
-        Cow::Owned(current_locale)
     };
 
-    let lang = locale_posix_to_bcp47(&lang).unwrap();
+    if is_dark {
+        dark_color
+    } else {
+        light_color
+    }
+}
 
-    let locale: icu::locale::Locale = lang.parse().unwrap();
+/// An exact copy of GTK's private function of the same name, to be used on Adw.HeaderBar's
+/// claiming gesture events logic for this application.
+///
+/// See: https://gitlab.gnome.org/GNOME/gtk/-/blob/main/gtk/gtkdragsource.c#L832
+pub fn gtk_drag_check_threshold_double(
+    widget: &impl IsA<gtk::Widget>,
+    start_point: (f64, f64),
+    offset_point: (f64, f64),
+) -> bool {
+    let drag_threshold = widget.settings().gtk_dnd_drag_threshold();
 
-    DateTimeFormatter::try_new(locale.into(), icu::datetime::fieldsets::YMDT::medium()).unwrap()
+    (offset_point.0 - start_point.0).abs() > drag_threshold as f64
+        || (offset_point.1 - start_point.1).abs() > drag_threshold as f64
 }

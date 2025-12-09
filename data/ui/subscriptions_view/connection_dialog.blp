@@ -46,17 +46,14 @@ template $MQTTySubscriptionsConnectionDialog: Adw.AlertDialog {
             text: bind template.url bidirectional;
           }
 
-          Adw.ExpanderRow {
-            title: _("Keep session");
-            show-enable-switch: true;
-            expanded: true;
-            enable-expansion: bind template.clean_start bidirectional inverted;
+          Adw.EntryRow {
+            title: _("Client ID (leave empty for random ID)");
+            text: bind template.client_id bidirectional;
+          }
 
-            Adw.EntryRow {
-              title: _("Client ID");
-              tooltip-text: _("If leave empty, a random one will be picked.");
-              text: bind template.client_id bidirectional;
-            }
+          Adw.SwitchRow {
+            title: _("Wipe queue on connect");
+            active: bind template.wipe_queue_on_connect bidirectional;
           }
 
           Adw.SwitchRow {

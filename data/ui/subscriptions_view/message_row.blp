@@ -1,0 +1,100 @@
+// Copyright (c) 2025 Oscar Pernia
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+using Gtk 4.0;
+using Adw 1;
+using GtkSource 5;
+
+template $MQTTySubscriptionsMessageRow: Adw.ExpanderRow {
+  Adw.ActionRow timestamp_row {
+    styles [
+      "property",
+    ]
+
+    title: _("Arrival date");
+    subtitle-selectable: true;
+  }
+
+  Adw.ActionRow retained_row {
+    styles [
+      "property",
+    ]
+
+    title: _("Retained");
+  }
+
+  ListBoxRow {
+    styles [
+      "mqtty-body-row",
+    ]
+
+    activatable: false;
+    selectable: false;
+
+    Stack body_row_stack {
+      vhomogeneous: false;
+
+      StackPage {
+        name: "no-body";
+
+        child: Adw.StatusPage {
+          styles [
+            "compact",
+          ]
+
+          title: _("No message body");
+          icon-name: "chat-none-symbolic";
+          height-request: 200;
+        };
+      }
+
+      StackPage {
+        name: "body";
+
+        child: Box {
+          orientation: vertical;
+
+          CenterBox {
+            styles [
+              "header",
+            ]
+
+            [start]
+            Label {
+              styles [
+                "title",
+              ]
+
+              valign: center;
+              label: _("Message body");
+            }
+
+            [end]
+            DropDown content_type_dropdown {
+              valign: center;
+            }
+          }
+
+          $MQTTySourceView source_view {
+            monospace: true;
+            editable: false;
+            show-line-numbers: true;
+
+            buffer: GtkSource.Buffer {};
+          }
+        };
+      }
+    }
+  }
+}

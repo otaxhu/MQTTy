@@ -79,6 +79,7 @@ mod imp {
                     Signal::builder("connection-state-changed")
                         .param_types([MQTTyClientConnectionState::static_type()])
                         .build(),
+                    Signal::builder("identity-changed").build(),
                 ]
             });
             &*SIGNALS
@@ -271,8 +272,12 @@ mod imp {
         }
 
         pub fn set_connection_model(&self, conn_model: &MQTTyConnectionModel) {
-            *self.connection_model.borrow_mut() = conn_model.clone();
             let obj = self.obj();
+
+            let identity_changed =
+                obj.client_id() != conn_model.client_id || obj.url() != conn_model.url;
+
+            *self.connection_model.borrow_mut() = conn_model.clone();
 
             let mut builder = MQTTyClient::builder()
                 .mqtt_version(obj.mqtt_version())
@@ -363,6 +368,10 @@ mod imp {
 
             for prop in props_to_notify {
                 obj.notify(prop);
+            }
+
+            if identity_changed {
+                obj.emit_by_name::<()>("identity-changed", &[]);
             }
         }
 
@@ -568,6 +577,14 @@ impl MQTTySubscriptionMessagesClientWrapper {
             "connection-state-changed",
             false,
             glib::closure_local!(|o: _, state: _| cb(o, state)),
+        )
+    }
+
+    pub fn connect_identity_changed(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "identity-changed",
+            false,
+            glib::closure_local!(|o: _| cb(o)),
         )
     }
 }

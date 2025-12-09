@@ -15,31 +15,34 @@
 
 mod connection_dialog;
 mod connection_row;
-mod connections_sidebar;
+mod message_row;
 mod subscription_dialog;
-mod subscription_messages;
+mod subscription_messages_sheet;
 mod subscription_row;
 mod subscriptions_overview;
+mod toasts;
 
 pub use connection_dialog::MQTTySubscriptionsConnectionDialog;
 pub use connection_row::MQTTySubscriptionsConnectionRow;
-pub use connections_sidebar::MQTTySubscriptionsConnectionsSidebar;
+pub use message_row::MQTTySubscriptionsMessageRow;
 pub use subscription_dialog::MQTTySubscriptionDialog;
-pub use subscription_messages::MQTTySubscriptionMessages;
+pub use subscription_messages_sheet::MQTTySubscriptionMessagesSheet;
 pub use subscription_row::MQTTySubscriptionRow;
 pub use subscriptions_overview::MQTTySubscriptionsOverview;
 
 use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use gtk::{gio, glib};
+use gtk::glib;
 
 use crate::application::MQTTyApplication;
-use crate::client::MQTTyClientSubscriptionsData;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface, MQTTyDisplayModeIfaceImpl};
+use crate::services::subscription_messages::{
+    MQTTySubscriptionMessagesClientWrapper, MQTTySubscriptionMessagesController,
+};
+use crate::utils;
 
 fn handle_gesture_claim_event(ev: &gtk::GestureSingle, picked: &gtk::Widget) {
     // For now we are handling GtkButton s, maybe in the future subscriptions-view gets
@@ -49,7 +52,7 @@ fn handle_gesture_claim_event(ev: &gtk::GestureSingle, picked: &gtk::Widget) {
     let is_button =
         picked.is::<gtk::Button>() || picked.ancestor(gtk::Button::static_type()).is_some();
 
-    if !is_button || ev.current_button() == 3 || ev.downcast_ref::<gtk::GestureDrag>().is_some() {
+    if !is_button || ev.current_button() > 1 || ev.downcast_ref::<gtk::GestureDrag>().is_some() {
         ev.set_state(gtk::EventSequenceState::Claimed);
     }
 }
@@ -62,10 +65,12 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/subscriptions_view/subscriptions_view.ui")]
     #[properties(wrapper_type = super::MQTTySubscriptionsView)]
     pub struct MQTTySubscriptionsView {
-        model: OnceCell<gio::ListStore>,
+        controller: OnceCell<MQTTySubscriptionMessagesController>,
 
-        data_overview_map:
-            RefCell<HashMap<MQTTyClientSubscriptionsData, MQTTySubscriptionsOverview>>,
+        clients_overview_map:
+            RefCell<HashMap<MQTTySubscriptionMessagesClientWrapper, MQTTySubscriptionsOverview>>,
+
+        last_selected_row: RefCell<Option<gtk::ListBoxRow>>,
 
         #[property(get, set, builder(Default::default()))]
         display_mode: Cell<MQTTyDisplayMode>,
@@ -77,7 +82,10 @@ mod imp {
         stack: TemplateChild<gtk::Stack>,
 
         #[template_child]
-        header_bar: TemplateChild<adw::HeaderBar>,
+        sidebar_header_bar: TemplateChild<adw::HeaderBar>,
+
+        #[template_child]
+        sidebar: TemplateChild<gtk::ListBox>,
     }
 
     #[glib::object_subclass]
@@ -91,6 +99,97 @@ mod imp {
         type Interfaces = (MQTTyDisplayModeIface,);
 
         fn class_init(klass: &mut Self::Class) {
+            // Action is called by connection rows when they are deleted.
+            klass.install_action(
+                "subscriptions-view.delete-connection",
+                // u32 index of the client in `controllers.clients` ListModel
+                Some(u32::static_variant_type().as_ref()),
+                |this, _, index| {
+                    let index = index.unwrap().get::<u32>().unwrap();
+
+                    let im = this.imp();
+                    let controller = im.controller();
+
+                    let clients = controller.clients();
+                    let Some(client) = clients.item(index).map(|c| {
+                        c.downcast::<MQTTySubscriptionMessagesClientWrapper>()
+                            .unwrap()
+                    }) else {
+                        return;
+                    };
+
+                    glib::spawn_future_local(glib::clone!(
+                        #[weak]
+                        im,
+                        #[weak]
+                        controller,
+                        async move {
+                            // TODO: Show an AlertDialog to confirm the deletion
+
+                            let _ = controller.remove_client(&client).await;
+
+                            im.clients_overview_map.borrow_mut().remove(&client);
+                            im.nav_split_view.set_content(adw::NavigationPage::NONE);
+                        }
+                    ));
+                },
+            );
+            // Action is called by connection rows when they are edited.
+            klass.install_action(
+                "subscriptions-view.edit-connection",
+                Some(u32::static_variant_type().as_ref()),
+                |this, _, index| {
+                    // u32 index of the client in `controllers.clients` ListModel
+                    let index = index.unwrap().get::<u32>().unwrap();
+
+                    let im = this.imp();
+                    let controller = im.controller();
+
+                    let clients = controller.clients();
+                    let Some(client) = clients.item(index).map(|c| {
+                        c.downcast::<MQTTySubscriptionMessagesClientWrapper>()
+                            .unwrap()
+                    }) else {
+                        return;
+                    };
+
+                    glib::spawn_future_local(glib::clone!(
+                        #[weak]
+                        im,
+                        async move {
+                            let app = MQTTyApplication::get_singleton();
+                            let dialog = MQTTySubscriptionsConnectionDialog::new_edit(
+                                &client.connection_model(),
+                            );
+                            let window = app.active_window().unwrap();
+                            let Some(conn) = dialog.choose_future(&window).await else {
+                                return;
+                            };
+
+                            let controller = im.controller();
+
+                            if controller.contains_connection_for_update(
+                                &client,
+                                &conn.url,
+                                &conn.client_id,
+                            ) {
+                                // The connection already exists
+                                toasts::client_already_exists();
+                                return;
+                            }
+
+                            // Client is ok to be updated, BUT we don't call
+                            // client.sync_user_connected(), we let the connection row
+                            // do it.
+
+                            // This method emits "::notify::user-connected", so the connection
+                            // row will handle the corresponding UI events and call
+                            // client.sync_user_connected().
+                            client.set_connection_model(&conn);
+                        }
+                    ));
+                },
+            );
             klass.bind_template();
         }
 
@@ -104,10 +203,15 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let model = self.model();
+            let obj = self.obj();
+
+            let controller = self.controller();
+            let model = controller.clients();
 
             let stack = &self.stack;
-            let header_bar = &self.header_bar;
+            let sidebar_header_bar = &self.sidebar_header_bar;
+            let nav_split_view = &self.nav_split_view;
+            let sidebar = &self.sidebar;
 
             model.connect_notify_local(
                 Some("n-items"),
@@ -115,7 +219,9 @@ mod imp {
                     #[weak]
                     stack,
                     #[weak]
-                    header_bar,
+                    sidebar_header_bar,
+                    #[weak]
+                    nav_split_view,
                     move |list, _| {
                         let n_items = list.n_items();
 
@@ -125,64 +231,106 @@ mod imp {
                             "no-connections"
                         });
 
-                        header_bar.set_show_title(n_items != 0);
+                        sidebar_header_bar.set_show_title(n_items != 0);
+
+                        if n_items == 0 {
+                            nav_split_view.set_show_content(false);
+                        }
                     }
                 ),
             );
 
-            let obj = self.obj();
-
-            let nav_split_view = &self.nav_split_view;
-
-            let sidebar = MQTTySubscriptionsConnectionsSidebar::new(model);
-
-            sidebar.connect_connection_activated(glib::clone!(
-                #[weak(rename_to = this)]
-                self,
-                move |_, row, changed| {
-                    if changed {
-                        if row.is_selected() {
-                            this.nav_split_view.set_show_content(false);
-                        }
-
-                        let _ = this.data_overview_map.borrow_mut().remove(&row.data());
-                        return;
-                    }
-                    if row.is_selected() {
-                        this.nav_split_view.set_show_content(false);
-                        return;
-                    }
-                    let nav_split_view = &this.nav_split_view;
-                    let mut map = this.data_overview_map.borrow_mut();
-                    let overview = map
-                        .entry(row.data())
-                        .or_insert_with_key(|data| MQTTySubscriptionsOverview::from(data));
-
-                    nav_split_view.set_content(Some(overview));
-                    nav_split_view.set_show_content(true);
-                }
-            ));
-
-            nav_split_view.set_sidebar(Some(&sidebar));
-
             gtk::ClosureExpression::new::<bool>(
                 [
                     obj.property_expression_weak("display_mode"),
-                    nav_split_view.property_expression_weak("show-content"),
+                    model.property_expression_weak("n-items"),
                 ],
                 glib::closure!(|_: Option<glib::Object>,
                                 display_mode: MQTTyDisplayMode,
-                                show_content: bool| {
-                    !show_content || display_mode == MQTTyDisplayMode::Mobile
+                                n_conns: u32| {
+                    // Always collapse on mobile or when there are no connections
+                    display_mode == MQTTyDisplayMode::Mobile || n_conns == 0
                 }),
             )
             .bind(&**nav_split_view, "collapsed", glib::Object::NONE);
 
-            nav_split_view.connect_show_content_notify(move |nav_split_view| {
-                if !nav_split_view.shows_content() {
-                    sidebar.unselect_all();
+            obj.connect_display_mode_notify(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                #[weak]
+                sidebar,
+                move |_| {
+                    let row = this.last_selected_row.borrow().clone();
+                    sidebar.select_row(row.as_ref());
                 }
+            ));
+
+            obj.property_expression_weak("display_mode")
+                .chain_closure::<gtk::SelectionMode>(glib::closure!(
+                    |_: Option<glib::Object>, display_mode: MQTTyDisplayMode| {
+                        match display_mode {
+                            // When desktop, do not allow unselections
+                            MQTTyDisplayMode::Desktop => gtk::SelectionMode::Browse,
+                            // When mobile, allow unselections, this could happen
+                            // when pressing back the nav_split_view
+                            MQTTyDisplayMode::Mobile => gtk::SelectionMode::Single,
+                        }
+                    }
+                ))
+                .bind(&**sidebar, "selection-mode", glib::Object::NONE);
+
+            nav_split_view.connect_show_content_notify(glib::clone!(
+                #[weak]
+                sidebar,
+                move |nav_split_view| {
+                    if !nav_split_view.shows_content() {
+                        sidebar.unselect_all();
+                    }
+                }
+            ));
+
+            sidebar.bind_model(Some(&model), |o| {
+                let client = o
+                    .downcast_ref::<MQTTySubscriptionMessagesClientWrapper>()
+                    .unwrap();
+
+                MQTTySubscriptionsConnectionRow::new(client).upcast()
             });
+
+            sidebar.connect_row_activated(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                #[weak]
+                obj,
+                move |_, _| {
+                    // We assume that ::row-selected has already being handled before this,
+                    // so no need to call `self.set_subs_overview(...)`
+
+                    if obj.display_mode() != MQTTyDisplayMode::Mobile {
+                        // Handling it in ::row-selected
+                        return;
+                    }
+
+                    this.nav_split_view.set_show_content(true);
+                }
+            ));
+
+            sidebar.connect_row_selected(glib::clone!(
+                #[weak(rename_to = this)]
+                self,
+                #[weak]
+                obj,
+                move |_, row| {
+                    this.set_subs_overview(row);
+
+                    if obj.display_mode() == MQTTyDisplayMode::Mobile {
+                        // Handling it in ::row-activated
+                        return;
+                    }
+
+                    this.nav_split_view.set_show_content(true);
+                }
+            ));
 
             let click = gtk::GestureClick::new();
             click.set_button(0);
@@ -204,36 +352,56 @@ mod imp {
 
             let drag = gtk::GestureDrag::new();
             drag.set_propagation_phase(gtk::PropagationPhase::Capture);
-            drag.connect_drag_begin(|drag, x, y| {
+            drag.connect_drag_update(|drag, off_x, off_y| {
+                let start_point @ (x, y) = drag.start_point().unwrap();
+                let offset_point = (off_x, off_y);
                 let picked = drag
                     .widget()
                     .unwrap()
                     .pick(x, y, gtk::PickFlags::DEFAULT)
                     .unwrap();
 
-                let signal_id: Rc<RefCell<Option<glib::SignalHandlerId>>> = Default::default();
-
-                *signal_id.borrow_mut() = Some(drag.connect_drag_update(glib::clone!(
-                    #[strong]
-                    signal_id,
-                    move |drag, _x, _y| {
-                        drag.disconnect(signal_id.take().unwrap());
-                        handle_gesture_claim_event(drag.upcast_ref(), &picked);
-                    }
-                )));
+                if utils::gtk_drag_check_threshold_double(&picked, start_point, offset_point) {
+                    handle_gesture_claim_event(drag.upcast_ref(), &picked);
+                }
             });
 
-            header_bar.add_controller(click);
-            header_bar.add_controller(drag);
+            sidebar_header_bar.add_controller(click);
+            sidebar_header_bar.add_controller(drag);
         }
     }
     impl WidgetImpl for MQTTySubscriptionsView {}
     impl BinImpl for MQTTySubscriptionsView {}
 
     impl MQTTySubscriptionsView {
-        pub fn model(&self) -> &gio::ListStore {
-            self.model
-                .get_or_init(|| gio::ListStore::new::<MQTTyClientSubscriptionsData>())
+        /// Remember to call `nav_split_view.set_show_content(...)` after this.
+        fn set_subs_overview(&self, row: Option<&gtk::ListBoxRow>) {
+            let Some(client) = row.map(|r| {
+                r.downcast_ref::<MQTTySubscriptionsConnectionRow>()
+                    .unwrap()
+                    .client()
+            }) else {
+                // An unselection ocurred.
+                self.last_selected_row.replace(None);
+                return;
+            };
+
+            self.last_selected_row.replace(row.map(|r| r.clone()));
+
+            let nav_split_view = &self.nav_split_view;
+
+            let mut map = self.clients_overview_map.borrow_mut();
+
+            let overview = map
+                .entry(client)
+                .or_insert_with_key(|client| MQTTySubscriptionsOverview::new(client));
+
+            nav_split_view.set_content(Some(overview));
+        }
+
+        pub fn controller(&self) -> &MQTTySubscriptionMessagesController {
+            self.controller
+                .get_or_init(|| MQTTySubscriptionMessagesController::new().unwrap())
         }
     }
 
@@ -255,13 +423,26 @@ impl MQTTySubscriptionsView {
             return;
         };
 
-        let data = MQTTyClientSubscriptionsData::new();
+        let controller = self.imp().controller();
 
-        data.set_connection(&conn);
+        if controller.contains_connection(&conn.url, &conn.client_id) {
+            // The connection already exists
+            toasts::client_already_exists();
+            return;
+        }
 
-        let model = self.imp().model();
+        controller.add_clients(&[conn.clone()]);
+        let clients = controller.clients();
+        let new_client = clients
+            .item(clients.n_items() - 1)
+            .unwrap()
+            .downcast::<MQTTySubscriptionMessagesClientWrapper>()
+            .unwrap();
 
-        model.append(&data);
+        if conn.user_connected {
+            // Let the connection row do the error handling
+            new_client.notify_user_connected();
+        }
     }
 
     // pub fn set_entries(&self, entries: &[MQTTyClient]) {

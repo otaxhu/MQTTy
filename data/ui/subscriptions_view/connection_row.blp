@@ -17,28 +17,17 @@ using Adw 1;
 
 template $MQTTySubscriptionsConnectionRow: Adw.ActionRow {
   activatable: true;
-  selectable: false;
-
-  [prefix]
-  Box indicator {
-    styles [
-      "indicator",
-      "circular",
-    ]
-
-    valign: center;
-  }
+  selectable: true;
 
   [suffix]
   Adw.Spinner spinner {
     valign: center;
-    opacity: 0;
+    visible: false;
   }
 
   [suffix]
   Switch switcher {
     valign: center;
-    active: bind template.connected bidirectional;
   }
 
   [suffix]

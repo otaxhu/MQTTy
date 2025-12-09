@@ -25,8 +25,7 @@ pub use publish_general_tab::MQTTyPublishGeneralTab;
 pub use publish_user_props_tab::MQTTyPublishUserPropsTab;
 pub use publish_view_notebook::MQTTyPublishViewNotebook;
 
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use std::cell::Cell;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -35,6 +34,7 @@ use gtk::glib;
 
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::subclass::prelude::*;
+use crate::utils;
 
 fn handle_gesture_claim_event(ev: &gtk::GestureSingle, picked: &gtk::Widget) {
     let is_tab = glib::Type::from_name("AdwTab")
@@ -46,7 +46,7 @@ fn handle_gesture_claim_event(ev: &gtk::GestureSingle, picked: &gtk::Widget) {
 
     if (!is_tab && !is_button)
         || (is_button
-            && (ev.current_button() == 3 || ev.downcast_ref::<gtk::GestureDrag>().is_some()))
+            && (ev.current_button() > 1 || ev.downcast_ref::<gtk::GestureDrag>().is_some()))
     {
         ev.set_state(gtk::EventSequenceState::Claimed);
     }
@@ -118,6 +118,7 @@ mod imp {
 
             let click = gtk::GestureClick::new();
             click.set_button(0);
+            click.set_propagation_phase(gtk::PropagationPhase::Capture);
             click.connect_pressed(|click, n_presses, x, y| {
                 if n_presses > 1 {
                     click.set_state(gtk::EventSequenceState::Claimed);
@@ -132,23 +133,19 @@ mod imp {
             });
 
             let drag = gtk::GestureDrag::new();
-            drag.connect_drag_begin(|drag, x, y| {
+            drag.set_propagation_phase(gtk::PropagationPhase::Capture);
+            drag.connect_drag_update(|drag, off_x, off_y| {
+                let start_point @ (x, y) = drag.start_point().unwrap();
+                let offset_point = (off_x, off_y);
                 let picked = drag
                     .widget()
                     .unwrap()
                     .pick(x, y, gtk::PickFlags::DEFAULT)
                     .unwrap();
 
-                let signal_id: Rc<RefCell<Option<glib::SignalHandlerId>>> = Default::default();
-
-                *signal_id.borrow_mut() = Some(drag.connect_drag_update(glib::clone!(
-                    #[strong]
-                    signal_id,
-                    move |drag, _x, _y| {
-                        drag.disconnect(signal_id.take().unwrap());
-                        handle_gesture_claim_event(drag.upcast_ref(), &picked);
-                    }
-                )));
+                if utils::gtk_drag_check_threshold_double(&picked, start_point, offset_point) {
+                    handle_gesture_claim_event(drag.upcast_ref(), &picked);
+                }
             });
 
             self.tab_bar.add_controller(click);

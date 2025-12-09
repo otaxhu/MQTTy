@@ -13,18 +13,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::{OnceCell, RefCell};
-use std::rc::Rc;
+use std::cell::OnceCell;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::glib;
 
 use crate::application::MQTTyApplication;
-use crate::client::{MQTTyClientSubscription, MQTTyClientSubscriptionsData};
-use crate::widgets::{MQTTySubscriptionDialog, MQTTySubscriptionRow};
+use crate::services::subscription_messages::{
+    MQTTySubscriptionMessagesClientWrapper, MQTTySubscriptionMessagesSubscription,
+};
+use crate::utils;
+use crate::widgets::{
+    MQTTySubscriptionDialog, MQTTySubscriptionMessagesSheet, MQTTySubscriptionRow,
+};
 
-use super::handle_gesture_claim_event;
+use super::{handle_gesture_claim_event, toasts};
 
 mod imp {
 
@@ -37,10 +41,7 @@ mod imp {
     #[properties(wrapper_type = super::MQTTySubscriptionsOverview)]
     pub struct MQTTySubscriptionsOverview {
         #[property(get, construct_only)]
-        data: OnceCell<MQTTyClientSubscriptionsData>,
-
-        #[property(get, set)]
-        subtitle: RefCell<String>,
+        client: OnceCell<MQTTySubscriptionMessagesClientWrapper>,
 
         #[template_child]
         list_box: TemplateChild<gtk::ListBox>,
@@ -53,6 +54,12 @@ mod imp {
 
         #[template_child]
         header_bar: TemplateChild<adw::HeaderBar>,
+
+        #[template_child]
+        window_title: TemplateChild<adw::WindowTitle>,
+
+        #[template_child]
+        reset_session_button: TemplateChild<gtk::Button>,
     }
 
     #[glib::object_subclass]
@@ -76,7 +83,53 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for MQTTySubscriptionsOverview {
         fn constructed(&self) {
-            self.update_list_box();
+            let obj = self.obj();
+
+            let client = obj.client();
+
+            let window_title = &self.window_title;
+            let stack = &self.stack;
+            let list_box = &self.list_box;
+            let bottom_sheet = &self.bottom_sheet;
+
+            bottom_sheet.set_sheet(Some(&MQTTySubscriptionMessagesSheet::new(&client)));
+
+            client
+                .bind_property("name", &**window_title, "subtitle")
+                .sync_create()
+                .build();
+
+            let subs_list = client.subscriptions();
+
+            subs_list
+                .bind_property("n-items", &**stack, "visible-child-name")
+                .sync_create()
+                .transform_to(|_, n_items: u32| {
+                    Some(if n_items == 0 {
+                        "no-subscriptions"
+                    } else {
+                        "subscriptions"
+                    })
+                })
+                .build();
+
+            list_box.bind_model(
+                Some(&subs_list),
+                glib::clone!(
+                    #[weak]
+                    client,
+                    #[upgrade_or_panic]
+                    move |sub| {
+                        let sub = sub
+                            .downcast_ref::<MQTTySubscriptionMessagesSubscription>()
+                            .unwrap();
+
+                        let row = MQTTySubscriptionRow::new(sub, &client);
+
+                        row.upcast()
+                    }
+                ),
+            );
 
             let click = gtk::GestureClick::new();
             click.set_button(0);
@@ -98,24 +151,18 @@ mod imp {
 
             let drag = gtk::GestureDrag::new();
             drag.set_propagation_phase(gtk::PropagationPhase::Capture);
-            drag.connect_drag_begin(|drag, x, y| {
+            drag.connect_drag_update(|drag, off_x, off_y| {
+                let start_point @ (x, y) = drag.start_point().unwrap();
+                let offset_point = (off_x, off_y);
                 let picked = drag
                     .widget()
                     .unwrap()
                     .pick(x, y, gtk::PickFlags::DEFAULT)
                     .unwrap();
 
-                let signal_id: Rc<RefCell<Option<glib::SignalHandlerId>>> = Default::default();
-
-                *signal_id.borrow_mut() = Some(drag.connect_drag_update(glib::clone!(
-                    #[strong]
-                    signal_id,
-                    move |drag, _x, _y| {
-                        drag.disconnect(signal_id.take().unwrap());
-
-                        handle_gesture_claim_event(drag.upcast_ref(), &picked);
-                    }
-                )));
+                if utils::gtk_drag_check_threshold_double(&picked, start_point, offset_point) {
+                    handle_gesture_claim_event(drag.upcast_ref(), &picked);
+                }
             });
 
             self.header_bar.add_controller(click);
@@ -130,112 +177,55 @@ mod imp {
     impl MQTTySubscriptionsOverview {
         #[template_callback]
         fn on_new_subscription(&self) {
-            let data = self.obj().data();
-
-            glib::spawn_future_local(glib::clone!(
-                #[weak(rename_to = this)]
-                self,
-                #[weak]
-                data,
-                async move {
-                    let app = MQTTyApplication::get_singleton();
-                    let window = app.active_window().unwrap();
-                    let dialog = MQTTySubscriptionDialog::new();
-
-                    let Some(sub) = dialog.choose_future(&window).await else {
-                        return;
-                    };
-
-                    data.set_subscriptions(
-                        data.subscriptions()
-                            .into_iter()
-                            .chain(std::iter::once(sub))
-                            .collect::<Vec<_>>()
-                            .as_ref(),
-                    );
-
-                    this.update_list_box();
-                }
-            ));
-        }
-    }
-
-    impl MQTTySubscriptionsOverview {
-        fn update_list_box(&self) {
             let obj = self.obj();
-            let subs = obj.data().subscriptions();
+            let client = obj.client();
 
-            let list_box = &self.list_box;
+            glib::spawn_future_local(async move {
+                let app = MQTTyApplication::get_singleton();
+                let window = app.active_window().unwrap();
+                let dialog = MQTTySubscriptionDialog::new();
 
-            list_box.remove_all();
-            for sub in &subs {
-                list_box.append(&self.new_row_with_signals(sub));
-            }
+                let Some(sub) = dialog.choose_future(&window).await else {
+                    return;
+                };
 
-            self.stack.set_visible_child_name(if subs.len() != 0 {
-                "subscriptions"
-            } else {
-                "no-subscriptions"
+                if client.contains_subscription(&sub.topic_filter) {
+                    // Subscription already exists
+                    toasts::subscription_already_exists();
+                    return;
+                }
+
+                let subs_list = client.subscriptions();
+
+                client.add_subscriptions(&[sub]);
+                let _ = client
+                    .sync_subscription(
+                        &subs_list
+                            .item(subs_list.n_items() - 1)
+                            .unwrap()
+                            .downcast::<_>()
+                            .unwrap(),
+                    )
+                    .await;
             });
         }
 
-        fn new_row_with_signals(&self, sub: &MQTTyClientSubscription) -> MQTTySubscriptionRow {
+        #[template_callback]
+        fn on_reset_session(&self) {
             let obj = self.obj();
-            let data = obj.data();
-            let row = MQTTySubscriptionRow::from(sub);
-            row.connect_subscribed_notify(glib::clone!(
-                #[weak]
-                data,
-                move |row| {
-                    let mut subs = data.subscriptions();
-                    subs[row.index() as usize].subscribed = row.subscribed();
-                    data.set_subscriptions(&subs);
+            let client = obj.client();
+            let reset_session_button = &self.reset_session_button;
 
-                    // There is no need to call `this.update_list_box()`
+            reset_session_button.set_sensitive(false);
+
+            glib::spawn_future_local(glib::clone!(
+                #[weak]
+                reset_session_button,
+                async move {
+                    let _ = client.reset_session().await;
+                    reset_session_button.set_sensitive(true);
                 }
             ));
-            row.connect_delete_request(glib::clone!(
-                #[weak]
-                data,
-                #[weak(rename_to = this)]
-                self,
-                move |row| {
-                    let mut subs = data.subscriptions();
-
-                    subs.remove(row.index() as usize);
-
-                    data.set_subscriptions(&subs);
-
-                    this.update_list_box();
-                }
-            ));
-            row.connect_edit_request(glib::clone!(
-                #[weak]
-                data,
-                #[weak(rename_to = this)]
-                self,
-                move |row| {
-                    glib::spawn_future_local(glib::clone!(
-                        #[weak]
-                        row,
-                        async move {
-                            let mut subs = data.subscriptions();
-                            let sub = &subs[row.index() as usize];
-
-                            let app = MQTTyApplication::get_singleton();
-                            let window = app.active_window().unwrap();
-                            let dialog = MQTTySubscriptionDialog::new_edit(sub);
-                            let Some(new_sub) = dialog.choose_future(&window).await else {
-                                return;
-                            };
-                            subs[row.index() as usize] = new_sub;
-                            data.set_subscriptions(&subs);
-                            this.update_list_box();
-                        }
-                    ));
-                }
-            ));
-            row
         }
     }
 }
@@ -246,11 +236,8 @@ glib::wrapper! {
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
-impl From<&MQTTyClientSubscriptionsData> for MQTTySubscriptionsOverview {
-    fn from(value: &MQTTyClientSubscriptionsData) -> Self {
-        glib::Object::builder()
-            .property("subtitle", value.connection().name)
-            .property("data", value)
-            .build()
+impl MQTTySubscriptionsOverview {
+    pub fn new(client: &MQTTySubscriptionMessagesClientWrapper) -> Self {
+        glib::Object::builder().property("client", client).build()
     }
 }

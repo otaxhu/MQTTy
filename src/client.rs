@@ -353,6 +353,7 @@ mod imp {
                         out_msg.set_retained(msg.retained());
                         out_msg
                             .set_user_properties(props.user_iter().collect::<Vec<_>>().as_slice());
+                        out_msg.set_timestamp(chrono::Local::now().to_rfc3339());
 
                         obj.emit_by_name::<()>("message", &[&out_msg]);
                     }

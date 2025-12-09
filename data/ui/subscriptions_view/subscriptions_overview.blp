@@ -19,17 +19,23 @@ template $MQTTySubscriptionsOverview: Adw.NavigationPage {
   title: _("Subscriptions");
 
   Adw.BottomSheet bottom_sheet {
-    sheet: $MQTTySubscriptionMessages {};
-
+    // // Sheet is being set in the class
+    // sheet: ...;
     content: Adw.ToolbarView {
       [top]
       Adw.HeaderBar header_bar {
         decoration-layout: "";
 
-        title-widget: Adw.WindowTitle {
+        title-widget: Adw.WindowTitle window_title {
           title: bind template.title;
-          subtitle: bind template.subtitle;
         };
+
+        [start]
+        Button reset_session_button {
+          icon-name: "view-refresh-symbolic";
+          tooltip-text: _("Reset session");
+          clicked => $on_reset_session() swapped;
+        }
 
         [end]
         Button {

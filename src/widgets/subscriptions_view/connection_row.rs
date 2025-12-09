@@ -13,18 +13,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::{Cell, OnceCell, RefCell};
-use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::cell::OnceCell;
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-use glib::subclass::Signal;
+use formatx::formatx;
+use gettextrs::gettext;
 use gtk::glib;
 
-use crate::client::{MQTTyClient, MQTTyClientSubscription, MQTTyClientSubscriptionsData};
+use crate::services::subscription_messages::MQTTySubscriptionMessagesClientWrapper;
 
 mod imp {
+
+    use crate::client::MQTTyClientConnectionState;
 
     use super::*;
 
@@ -33,21 +34,8 @@ mod imp {
     #[properties(wrapper_type = super::MQTTySubscriptionsConnectionRow)]
     pub struct MQTTySubscriptionsConnectionRow {
         #[property(get, construct_only)]
-        client: OnceCell<MQTTyClient>,
+        client: OnceCell<MQTTySubscriptionMessagesClientWrapper>,
 
-        #[property(get, construct_only)]
-        data: OnceCell<MQTTyClientSubscriptionsData>,
-
-        #[property(get, set)]
-        indicator_state: RefCell<String>,
-
-        #[property(get, set)]
-        connected: Cell<bool>,
-
-        current_subscriptions: RefCell<Vec<MQTTyClientSubscription>>,
-
-        #[template_child]
-        indicator: TemplateChild<gtk::Box>,
         #[template_child]
         switcher: TemplateChild<gtk::Switch>,
         #[template_child]
@@ -64,11 +52,27 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.install_action("connection-row.edit", None, |this, _, _| {
-                this.emit_by_name::<()>("edit-request", &[]);
+                let Ok(index) = u32::try_from(this.index()) else {
+                    return;
+                };
+
+                this.activate_action(
+                    "subscriptions-view.edit-connection",
+                    Some(&index.to_variant()),
+                )
+                .unwrap();
             });
 
             klass.install_action("connection-row.delete", None, |this, _, _| {
-                this.emit_by_name::<()>("delete-request", &[]);
+                let Ok(index) = u32::try_from(this.index()) else {
+                    return;
+                };
+
+                this.activate_action(
+                    "subscriptions-view.delete-connection",
+                    Some(&index.to_variant()),
+                )
+                .unwrap();
             });
 
             klass.bind_template();
@@ -85,129 +89,114 @@ mod imp {
             self.parent_constructed();
 
             let obj = self.obj();
+            let client = obj.client();
 
-            let indicator = &self.indicator;
+            let switcher = &self.switcher;
+            let spinner = &self.spinner;
 
-            let last_indicator_state: RefCell<Option<String>> = Default::default();
+            client
+                .bind_property("name", &*obj, "title")
+                .sync_create()
+                .build();
+            client
+                .bind_property("url", &*obj, "subtitle")
+                .sync_create()
+                .build();
 
-            obj.connect_indicator_state_notify(glib::clone!(
+            client
+                .bind_property("user-connected", &**switcher, "active")
+                .sync_create()
+                .bidirectional()
+                .build();
+
+            client.connect_user_connected_notify(glib::clone!(
                 #[weak]
-                indicator,
-                move |obj| {
-                    if let Some(ref last_state) = last_indicator_state.take() {
-                        indicator.remove_css_class(last_state);
-                    }
-                    let current_state = obj.indicator_state();
-                    indicator.add_css_class(&current_state);
-                    *last_indicator_state.borrow_mut() = Some(current_state);
-                }
-            ));
-
-            let data = obj.data();
-
-            *self.current_subscriptions.borrow_mut() = data.subscriptions();
-
-            data.connect_changed_subscriptions(glib::clone!(
-                #[weak(rename_to = this)]
-                self,
+                spinner,
+                #[weak]
+                switcher,
                 #[weak]
                 obj,
-                move |data| {
-                    let mut current_subscriptions = this.current_subscriptions.borrow_mut();
-                    let new_subscriptions = data.subscriptions();
+                move |client| {
+                    switcher.remove_css_class("error");
+                    obj.set_tooltip_text(None);
 
-                    if !data.connection().connected {
-                        // Clear current subscriptions
-                        *current_subscriptions = vec![];
-                        return;
+                    let switcher_has_focus = switcher.has_focus();
+
+                    switcher.set_sensitive(false);
+
+                    if switcher_has_focus {
+                        obj.grab_focus();
                     }
 
-                    let curr_map = current_subscriptions
-                        .iter()
-                        .map(|s| (s.topic_filter.clone(), s.clone()))
-                        .collect::<HashMap<_, _>>();
-                    let new_map = new_subscriptions
-                        .iter()
-                        .map(|s| (s.topic_filter.clone(), s.clone()))
-                        .collect::<HashMap<_, _>>();
+                    spinner.set_visible(true);
 
-                    let mut requires_reconnect = false;
-                    let mut to_subscribe = vec![];
+                    glib::spawn_future_local(glib::clone!(
+                        #[weak]
+                        client,
+                        async move {
+                            match client.sync_user_connected().await {
+                                Err(e) => {
+                                    obj.set_tooltip_text(Some(
+                                        formatx!(gettext("There was an error: {}"), e)
+                                            .unwrap()
+                                            .as_str(),
+                                    ));
 
-                    for (topic, new_sub) in &new_map {
-                        match curr_map.get(topic) {
-                            Some(prev_sub) => {
-                                if prev_sub.subscribed && !new_sub.subscribed {
-                                    requires_reconnect = true;
-                                    break;
+                                    switcher.add_css_class("error");
                                 }
-                                if !prev_sub.subscribed && new_sub.subscribed {
-                                    to_subscribe.push(new_sub.clone());
-                                }
+                                // Ok(...) branch code is handled in connection_state_changed
+                                // handler below.
+                                //
+                                // It is guaranteed that it will be called with Connected state.
+                                _ => {}
                             }
-                            None => {
-                                if new_sub.subscribed {
-                                    to_subscribe.push(new_sub.clone());
-                                }
-                            }
+                            spinner.set_visible(false);
+                            switcher.set_sensitive(true);
                         }
-                    }
+                    ));
+                }
+            ));
 
-                    for (topic, prev_sub) in &curr_map {
-                        if !new_map.contains_key(topic) && prev_sub.subscribed {
-                            requires_reconnect = true;
-                            break;
+            client.connect_connection_state_changed(glib::clone!(
+                #[weak]
+                switcher,
+                #[weak]
+                spinner,
+                #[weak]
+                obj,
+                move |client, state| {
+                    let user_connected = client.user_connected();
+                    let (text, is_err, spinning) = match (state, user_connected) {
+                        (MQTTyClientConnectionState::Connected, _)
+                        | (MQTTyClientConnectionState::Disconnected, false) => (None, false, false),
+                        (MQTTyClientConnectionState::Disconnected, true) => (
+                            Some(gettext("Client got disconnected by broker")),
+                            true,
+                            false,
+                        ),
+                        (MQTTyClientConnectionState::Reconnecting, _) => {
+                            (Some(gettext("Reconnecting...")), false, true)
                         }
-                    }
-
-                    if requires_reconnect {
-                        obj.set_connected(false);
-                        obj.set_connected(true);
+                        (MQTTyClientConnectionState::ReconnectFailure, _) => {
+                            (Some(gettext("Reconnection failed")), true, false)
+                        }
+                        (MQTTyClientConnectionState::SessionTakenOver, _) => (
+                            Some(gettext(
+                                "Another client took over the session (duplicated client ID)",
+                            )),
+                            true,
+                            false,
+                        ),
+                    };
+                    obj.set_tooltip_text(text.as_ref().map(|s| s.as_str()));
+                    if is_err {
+                        switcher.add_css_class("error");
                     } else {
-                        let client = obj.client();
-                        glib::spawn_future_local(async move {
-                            futures::future::join_all(
-                                to_subscribe
-                                    .iter()
-                                    .map(|s| client.subscribe(&s.topic_filter, s.qos)),
-                            )
-                            .await
-                            .into_iter()
-                            .filter(|res| res.is_err())
-                            .for_each(|res| {
-                                println!("Error while subscribing: {}", res.err().unwrap())
-                            });
-                        });
+                        switcher.remove_css_class("error");
                     }
-
-                    *current_subscriptions = new_subscriptions;
+                    spinner.set_visible(spinning);
                 }
             ));
-
-            data.connect_changed_connection(glib::clone!(
-                #[weak(rename_to = this)]
-                self,
-                move |_| {
-                    this.handle_connect_client();
-                }
-            ));
-
-            obj.connect_connected_notify(|obj| {
-                let data = obj.data();
-                let mut conn = data.connection();
-                conn.connected = obj.connected();
-                data.set_connection(&conn);
-            });
-        }
-
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
-                vec![
-                    Signal::builder("edit-request").build(),
-                    Signal::builder("delete-request").build(),
-                ]
-            });
-            &*SIGNALS
         }
     }
 
@@ -215,82 +204,6 @@ mod imp {
     impl PreferencesRowImpl for MQTTySubscriptionsConnectionRow {}
     impl ActionRowImpl for MQTTySubscriptionsConnectionRow {}
     impl ListBoxRowImpl for MQTTySubscriptionsConnectionRow {}
-
-    impl MQTTySubscriptionsConnectionRow {
-        /// It also handles disconnection if `obj.connected() == false`
-        fn handle_connect_client(&self) {
-            let obj = self.obj();
-
-            let switcher = &self.switcher;
-            let spinner = &self.spinner;
-
-            // We query the focus before setting its sensitive prop to false
-            let switcher_has_focus = switcher.has_focus();
-
-            switcher.set_sensitive(false);
-            spinner.set_opacity(1.0);
-
-            if switcher_has_focus {
-                obj.grab_focus();
-            }
-
-            let connected = obj.connected();
-            let client = obj.client();
-            let data = obj.data();
-            let subs = data.subscriptions();
-
-            glib::spawn_future_local(glib::clone!(
-                #[weak]
-                obj,
-                #[weak]
-                switcher,
-                #[weak]
-                spinner,
-                async move {
-                    async move {
-                        if !connected {
-                            let _ = client.disconnect_client().await;
-                            obj.set_indicator_state("disabled");
-                            obj.set_tooltip_text(None);
-                            return;
-                        }
-
-                        match client.connect_client().await {
-                            Ok(_) => {
-                                obj.set_indicator_state("success");
-                                obj.set_tooltip_text(None);
-
-                                // Must subscribe after the client is connected,
-                                // otherwise an error "Client disconnected" is returned.
-                                futures::future::join_all(
-                                    subs.iter()
-                                        .filter(|sub| sub.subscribed)
-                                        .map(|sub| client.subscribe(&sub.topic_filter, sub.qos)),
-                                )
-                                .await
-                                .into_iter()
-                                .filter(|res| res.is_err())
-                                .for_each(|res| {
-                                    println!("Error while subscribing: {}", res.err().unwrap())
-                                });
-                            }
-                            Err(e) => {
-                                obj.set_indicator_state("error");
-                                obj.set_tooltip_text(Some(&format!(
-                                    "There was an error while connecting: {}",
-                                    e
-                                )));
-                            }
-                        };
-                    }
-                    .await;
-
-                    spinner.set_opacity(0.0);
-                    switcher.set_sensitive(true);
-                }
-            ));
-        }
-    }
 }
 
 glib::wrapper! {
@@ -300,53 +213,7 @@ glib::wrapper! {
 }
 
 impl MQTTySubscriptionsConnectionRow {
-    pub fn connect_delete_request(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "delete-request",
-            false,
-            glib::closure_local!(|o: &Self| cb(o)),
-        )
-    }
-
-    pub fn connect_edit_request(&self, cb: impl Fn(&Self) + 'static) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "edit-request",
-            false,
-            glib::closure_local!(|o: &Self| cb(o)),
-        )
-    }
-}
-
-impl From<&MQTTyClientSubscriptionsData> for MQTTySubscriptionsConnectionRow {
-    fn from(value: &MQTTyClientSubscriptionsData) -> Self {
-        let conn = value.connection();
-
-        let client = MQTTyClient::builder()
-            .clean_start(conn.clean_start)
-            .client_id(&conn.client_id)
-            .url(&conn.url);
-
-        let client = if let Some(username) = conn.username {
-            client.username(&username)
-        } else {
-            client
-        };
-
-        let client = if let Some(password) = conn.password {
-            client.password(&password)
-        } else {
-            client
-        };
-
-        let client = client.build();
-
-        glib::Object::builder()
-            .property("client", &client)
-            .property("title", &conn.name)
-            .property("subtitle", &conn.url)
-            .property("connected", conn.connected)
-            .property("indicator_state", "disabled")
-            .property("data", value)
-            .build()
+    pub fn new(client: &MQTTySubscriptionMessagesClientWrapper) -> Self {
+        glib::Object::builder().property("client", client).build()
     }
 }

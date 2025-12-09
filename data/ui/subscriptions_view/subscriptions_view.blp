@@ -16,13 +16,19 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTySubscriptionsView: Adw.Bin {
-  Stack stack {
-    StackPage {
-      name: "no-connections";
+  Adw.NavigationSplitView nav_split_view {
+    show-content: false;
+    collapsed: true;
+    sidebar-width-fraction: 0.25;
+    min-sidebar-width: 300;
+    max-sidebar-width: 500;
+
+    sidebar: Adw.NavigationPage {
+      title: _("Connections");
 
       child: Adw.ToolbarView {
         [top]
-        Adw.HeaderBar header_bar {
+        Adw.HeaderBar sidebar_header_bar {
           decoration-layout: "";
           show-title: false;
 
@@ -34,40 +40,61 @@ template $MQTTySubscriptionsView: Adw.Bin {
           }
         }
 
-        content: Adw.StatusPage {
-          title: _("Subscribe to topics");
-          description: _("It seems that you don't have any connections open");
-          icon-name: "network-transmit-receive-symbolic";
+        content: Stack stack {
+          StackPage {
+            name: "no-connections";
 
-          child: Adw.Clamp {
-            Button {
-              styles [
-                "pill",
-                "suggested-action",
-              ]
+            child: Adw.StatusPage {
+              title: _("Subscribe to topics");
+              description: _("It seems that you don't have any connections open");
+              icon-name: "network-transmit-receive-symbolic";
 
-              action-name: "win.subscriptions-new-connection";
+              child: Adw.Clamp {
+                Button {
+                  styles [
+                    "pill",
+                    "suggested-action",
+                  ]
 
-              Adw.ButtonContent {
-                icon-name: "tab-new-symbolic";
-                label: _("New connection");
+                  action-name: "win.subscriptions-new-connection";
+
+                  Adw.ButtonContent {
+                    icon-name: "tab-new-symbolic";
+                    label: _("New connection");
+                  }
+                }
+              };
+            };
+          }
+
+          StackPage {
+            name: "connections";
+
+            child: ScrolledWindow {
+              Adw.Clamp {
+                ListBox sidebar {
+                  styles [
+                    "boxed-list-separate",
+                  ]
+
+                  valign: start;
+                  margin-top: 16;
+                  margin-bottom: 16;
+                  margin-start: 16;
+                  margin-end: 16;
+                  // Use 'browse' on desktop mode, and use 'single' on mobile
+                  // mode to allow unselections e.g. When going back the nav_split_view
+                  // when it's in mobile mode.
+                  //
+                  // Configured in widget code.
+                  //
+                  // selection-mode: ...;
+                }
               }
-            }
-          };
+            };
+          }
         };
       };
-    }
-
-    StackPage {
-      name: "connections";
-
-      child: Adw.NavigationSplitView nav_split_view {
-        show-content: false;
-        collapsed: true;
-        sidebar-width-fraction: 0.33;
-        min-sidebar-width: 300;
-        max-sidebar-width: 500;
-      };
-    }
+    };
   }
 }

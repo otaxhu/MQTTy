@@ -19,8 +19,9 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::glib;
+use nanoid::nanoid;
 
-use crate::client::MQTTyClientConnection;
+use crate::models::MQTTyConnectionModel;
 
 mod imp {
 
@@ -35,9 +36,9 @@ mod imp {
         #[property(name = "url", get, set, type = String, member = url)]
         #[property(name = "username", get, set, type = Option<String>, member = username)]
         #[property(name = "password", get, set, type = Option<String>, member = password)]
-        #[property(name = "clean-start", get, set, type = bool, member = clean_start)]
-        #[property(name = "connected", get, set, type = bool, member = connected)]
-        pub connection: RefCell<MQTTyClientConnection>,
+        #[property(name = "wipe-queue-on-connect", get, set, type = bool, member = wipe_queue_on_connect)]
+        #[property(name = "connected", get, set, type = bool, member = user_connected)]
+        pub connection: RefCell<MQTTyConnectionModel>,
 
         #[property(get, set)]
         is_valid: Cell<bool>,
@@ -64,7 +65,7 @@ mod imp {
 
         fn new() -> Self {
             Self {
-                connection: RefCell::new(MQTTyClientConnection {
+                connection: RefCell::new(MQTTyConnectionModel {
                     username: Some("".to_string()),
                     password: Some("".to_string()),
                     ..Default::default()
@@ -122,7 +123,7 @@ impl MQTTySubscriptionsConnectionDialog {
             .build()
     }
 
-    pub fn new_edit(conn: &MQTTyClientConnection) -> Self {
+    pub fn new_edit(conn: &MQTTyConnectionModel) -> Self {
         glib::Object::builder()
             .property("heading", gettext("Edit connection"))
             .property("name", &conn.name)
@@ -130,22 +131,29 @@ impl MQTTySubscriptionsConnectionDialog {
             .property("url", &conn.url)
             .property("username", conn.username.as_ref())
             .property("password", conn.password.as_ref())
-            .property("clean-start", conn.clean_start)
-            .property("connected", conn.connected)
+            .property("wipe-queue-on-connect", conn.wipe_queue_on_connect)
+            .property("connected", conn.user_connected)
             .build()
     }
 
-    /// Returns an already validated MQTTyClientConnection struct, or None if
+    /// Returns an already validated ClientWrapperConnectionModel struct, or None if
     /// "cancel" or "close" were the options selected
     pub async fn choose_future(
         self,
         parent: &impl IsA<gtk::Widget>,
-    ) -> Option<MQTTyClientConnection> {
+    ) -> Option<MQTTyConnectionModel> {
         match AlertDialogExtManual::choose_future(self.clone(), parent)
             .await
             .as_ref()
         {
-            "save" => Some(self.imp().connection.take()),
+            "save" => {
+                let mut conn = self.imp().connection.take();
+                if conn.client_id.is_empty() {
+                    conn.client_id =
+                        format!("MQTTy-{}-{}", chrono::Local::now().date_naive(), nanoid!());
+                }
+                Some(conn)
+            }
             _ => None,
         }
     }

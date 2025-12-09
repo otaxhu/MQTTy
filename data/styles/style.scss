@@ -13,8 +13,43 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-@use 'indicator';
+@use "indicator";
 
 :root.accent-color-system-unsupported {
   --accent-bg-color: var(--accent-purple);
+}
+
+// Taking some constants and properties from libadwaita SCSS code.
+//
+// See: https://gitlab.gnome.org/GNOME/libadwaita/-/blob/main/src/stylesheet/widgets/_lists.scss#L119
+
+// Adw's radius on first and last childs of a boxed-list
+$adw-boxed-list-radius: 12px;
+// Margin for .header box, add 2px to compensate removed padding.
+$adw-header-row-margin: (12px + 2px);
+
+row.mqtty-body-row {
+  // Remove Adw's padding so that .sourceview looks good.
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+
+  .sourceview {
+    padding: 2px;
+  }
+
+  &:last-child .sourceview {
+    border-bottom-left-radius: $adw-boxed-list-radius;
+    border-bottom-right-radius: $adw-boxed-list-radius;
+  }
+
+  & box.header {
+    margin-left: $adw-header-row-margin;
+    margin-right: $adw-header-row-margin;
+    min-height: 50px;
+  }
+
+  & stack > box {
+    border-spacing: 2px;
+  }
 }
