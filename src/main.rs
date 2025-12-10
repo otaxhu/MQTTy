@@ -62,7 +62,9 @@ fn main() -> glib::ExitCode {
     #[cfg(target_os = "windows")]
     {
         if let Err(_) = std::env::var("GSK_RENDERER") {
-            std::env::set_var("GSK_RENDERER", "cairo");
+            unsafe {
+                std::env::set_var("GSK_RENDERER", "cairo");
+            }
         }
     }
 
@@ -84,7 +86,9 @@ fn main() -> glib::ExitCode {
         let mut new_dirs = vec![datadir];
         new_dirs.extend(xdg_data_dirs);
         let xdg_data_dir = std::env::join_paths(&new_dirs).unwrap();
-        std::env::set_var("XDG_DATA_DIRS", xdg_data_dir);
+        unsafe {
+            std::env::set_var("XDG_DATA_DIRS", xdg_data_dir);
+        }
     }
 
     // Prepare GResources
