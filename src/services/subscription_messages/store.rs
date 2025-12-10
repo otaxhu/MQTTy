@@ -35,6 +35,8 @@ pub enum Error {
     SerdeJson(#[from] serde_json::Error),
     #[error("Project directory not found (XDG dirs)")]
     NoProjectDir,
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -99,9 +101,14 @@ impl MQTTySubscriptionMessagesStore {
     }
 
     fn get_db_path() -> Result<PathBuf> {
-        ProjectDirs::from("io.github", "otaxhu", "MQTTy")
-            .ok_or(Error::NoProjectDir)
-            .map(|d| d.data_dir().join("messages.db"))
+        let root_dir =
+            ProjectDirs::from("io.github", "otaxhu", "MQTTy").ok_or(Error::NoProjectDir)?;
+
+        let data_dir = root_dir.data_dir();
+
+        std::fs::create_dir_all(data_dir)?;
+
+        Ok(data_dir.join("messages.db"))
     }
 
     /// Returns the row id, and whether a new row was inserted

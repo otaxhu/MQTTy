@@ -82,13 +82,13 @@ type MQTTySettingConnectionTuple = (String, String);
 impl FromVariant for MQTTySettingConnection {
     fn from_variant(variant: &gtk::glib::Variant) -> Option<Self> {
         let tuple = variant.get::<MQTTySettingConnectionTuple>();
-        if tuple.is_none() {
-            tracing::error!(
-                "Could not convert from variant with format '{}', expected '{}'",
-                variant.type_(),
-                VARIANT_TYPE
-            );
-        }
+        // if tuple.is_none() {
+        //     tracing::error!(
+        //         "Could not convert from variant with format '{}', expected '{}'",
+        //         variant.type_(),
+        //         VARIANT_TYPE
+        //     );
+        // }
 
         tuple.map(|tuple| tuple.into())
     }
