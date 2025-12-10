@@ -55,6 +55,16 @@ mod imp {
 
         type ParentType = adw::AlertDialog;
 
+        fn new() -> Self {
+            Self {
+                subscription: RefCell::new(MQTTySubscriptionModel {
+                    user_subscribed: true,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }
+        }
+
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
         }

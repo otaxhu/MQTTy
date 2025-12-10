@@ -68,6 +68,7 @@ mod imp {
                 connection: RefCell::new(MQTTyConnectionModel {
                     username: Some("".to_string()),
                     password: Some("".to_string()),
+                    user_connected: true,
                     ..Default::default()
                 }),
                 ..Default::default()
