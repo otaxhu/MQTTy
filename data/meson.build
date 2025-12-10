@@ -17,10 +17,6 @@
 blueprint_files = [
   'auto-resources/shortcuts-dialog.blp',
   'ui/main_window.blp',
-  'ui/add_conn_card.blp',
-  'ui/conn_card.blp',
-  'ui/base_card.blp',
-  'ui/edit_conn_list_box.blp',
   'ui/key_value_row.blp',
   'ui/publish_view/publish_view.blp',
   'ui/publish_view/publish_view_notebook.blp',
@@ -36,10 +32,6 @@ blueprint_files = [
   'ui/subscriptions_view/connection_row.blp',
   'ui/subscriptions_view/connection_dialog.blp',
   'ui/subscriptions_view/message_row.blp',
-  'ui/pages/base_page.blp',
-  'ui/pages/all_conn_page.blp',
-  'ui/pages/add_conn_page.blp',
-  'ui/pages/panel_page.blp',
 ]
 
 blueprint_targets = []

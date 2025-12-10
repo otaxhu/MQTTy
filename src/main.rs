@@ -26,7 +26,6 @@ mod l10n;
 mod main_window;
 mod models;
 mod objects;
-mod pages;
 mod services;
 mod subclass;
 mod toast;

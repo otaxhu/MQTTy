@@ -26,13 +26,11 @@ use crate::config;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface};
 use crate::gsettings::MQTTySettingConnection;
 use crate::main_window::MQTTyWindow;
-use crate::pages::{MQTTyAddConnPage, MQTTyAllConnPage, MQTTyBasePage, MQTTyPanelPage};
 use crate::widgets::{
-    MQTTyAddConnCard, MQTTyBaseCard, MQTTyConnCard, MQTTyEditConnListBox, MQTTyKeyValueRow,
-    MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab,
-    MQTTyPublishView, MQTTySourceView, MQTTySubscriptionDialog, MQTTySubscriptionMessagesSheet,
-    MQTTySubscriptionRow, MQTTySubscriptionsConnectionDialog, MQTTySubscriptionsConnectionRow,
-    MQTTySubscriptionsOverview, MQTTySubscriptionsView,
+    MQTTyKeyValueRow, MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab,
+    MQTTyPublishUserPropsTab, MQTTyPublishView, MQTTySourceView, MQTTySubscriptionDialog,
+    MQTTySubscriptionMessagesSheet, MQTTySubscriptionRow, MQTTySubscriptionsConnectionDialog,
+    MQTTySubscriptionsConnectionRow, MQTTySubscriptionsOverview, MQTTySubscriptionsView,
 };
 
 mod imp {
@@ -73,10 +71,6 @@ mod imp {
             MQTTySettingConnection::static_type();
 
             // Widgets
-            MQTTyBaseCard::static_type();
-            MQTTyAddConnCard::static_type();
-            MQTTyConnCard::static_type();
-            MQTTyEditConnListBox::static_type();
             MQTTySourceView::static_type();
             MQTTyKeyValueRow::static_type();
 
@@ -93,12 +87,6 @@ mod imp {
             MQTTySubscriptionsOverview::static_type();
             MQTTySubscriptionsConnectionRow::static_type();
             MQTTySubscriptionsConnectionDialog::static_type();
-
-            // Pages
-            MQTTyBasePage::static_type();
-            MQTTyAllConnPage::static_type();
-            MQTTyAddConnPage::static_type();
-            MQTTyPanelPage::static_type();
 
             // Enums
             MQTTyDisplayMode::static_type();
