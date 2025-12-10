@@ -43,11 +43,13 @@ base_id = 'io.github.otaxhu.MQTTy'
 
 dependency('glib-2.0', version: '>= 2.66')
 dependency('gio-2.0', version: '>= 2.66')
-dependency('gtk4', version: '>= 4.0.0')
+dependency('gtk4', version: '>= 4.20')
 dependency('openssl', version: '>= 1.0')
 dependency('gtksourceview-5', version: '>= 5.0')
-dependency('libadwaita-1', version: '>= 1.6')
+dependency('libadwaita-1', version: '>= 1.8')
 
+# Required by Paho C during build time
+find_program('cmake')
 find_program('glib-compile-resources')
 glib_compile_schemas = find_program('glib-compile-schemas')
 desktop_file_validate = find_program('desktop-file-validate', required: false)
