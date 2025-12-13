@@ -135,7 +135,7 @@ mod imp {
             let drag = gtk::GestureDrag::new();
             drag.set_propagation_phase(gtk::PropagationPhase::Capture);
             drag.connect_drag_update(|drag, off_x, off_y| {
-                let start_point @ (x, y) = drag.start_point().unwrap();
+                let (x, y) = drag.start_point().unwrap();
                 let offset_point = (off_x, off_y);
                 let picked = drag
                     .widget()
@@ -143,7 +143,7 @@ mod imp {
                     .pick(x, y, gtk::PickFlags::DEFAULT)
                     .unwrap();
 
-                if utils::gtk_drag_check_threshold_double(&picked, start_point, offset_point) {
+                if utils::gtk_drag_check_threshold_double(&picked, (0.0, 0.0), offset_point) {
                     handle_gesture_claim_event(drag.upcast_ref(), &picked);
                 }
             });
