@@ -177,8 +177,6 @@ impl MQTTyApplication {
         self.set_accels_for_action("win.publish-new-tab", &["<Control>t"]);
         self.set_accels_for_action("win.publish-delete-tab", &["<Control>w"]);
 
-        self.set_accels_for_action("win.subscriptions-new-connection", &["<Control>n"]);
-
         self.set_accels_for_action("win.set-publish-view", &["<Alt>Left"]);
         self.set_accels_for_action("win.set-subscriptions-view", &["<Alt>Right"]);
     }
