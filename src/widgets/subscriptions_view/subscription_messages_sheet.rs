@@ -21,6 +21,9 @@ use gtk::{gio, glib};
 
 use crate::client::MQTTyClientMessage;
 use crate::services::subscription_messages::MQTTySubscriptionMessagesClientWrapper;
+use crate::utils;
+
+use super::handle_gesture_claim_event;
 
 mod imp {
 
@@ -49,6 +52,9 @@ mod imp {
 
         #[template_child]
         load_messages_button: TemplateChild<gtk::Button>,
+
+        #[template_child]
+        header_bar: TemplateChild<adw::HeaderBar>,
     }
 
     #[glib::object_subclass]
@@ -126,6 +132,43 @@ mod imp {
                     this.on_load_messages();
                 }
             ));
+
+            let click = gtk::GestureClick::new();
+            click.set_button(0);
+            click.set_propagation_phase(gtk::PropagationPhase::Capture);
+            click.connect_pressed(|click, n_presses, x, y| {
+                if n_presses > 1 {
+                    click.set_state(gtk::EventSequenceState::Claimed);
+                    return;
+                }
+
+                let picked = click
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+
+                handle_gesture_claim_event(click.upcast_ref(), &picked);
+            });
+
+            let drag = gtk::GestureDrag::new();
+            drag.set_propagation_phase(gtk::PropagationPhase::Capture);
+            drag.connect_drag_update(|drag, off_x, off_y| {
+                let (x, y) = drag.start_point().unwrap();
+                let offset_point = (off_x, off_y);
+                let picked = drag
+                    .widget()
+                    .unwrap()
+                    .pick(x, y, gtk::PickFlags::DEFAULT)
+                    .unwrap();
+
+                if utils::gtk_drag_check_threshold_double(&picked, (0.0, 0.0), offset_point) {
+                    handle_gesture_claim_event(drag.upcast_ref(), &picked);
+                }
+            });
+
+            self.header_bar.add_controller(click);
+            self.header_bar.add_controller(drag);
         }
     }
     impl WidgetImpl for MQTTySubscriptionMessagesSheet {}

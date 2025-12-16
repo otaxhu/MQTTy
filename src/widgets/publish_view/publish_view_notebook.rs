@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::{Cell, OnceCell, RefCell};
+use std::cell::{Cell, RefCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -34,8 +34,6 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/publish_view/publish_view_notebook.ui")]
     #[properties(wrapper_type = super::MQTTyPublishViewNotebook)]
     pub struct MQTTyPublishViewNotebook {
-        pub client: OnceCell<MQTTyClient>,
-
         #[property(get, set, override_interface = MQTTyDisplayModeIface)]
         display_mode: Cell<MQTTyDisplayMode>,
 
@@ -78,7 +76,6 @@ mod imp {
                 topic: Default::default(),
                 url: Default::default(),
                 qos: Default::default(),
-                client: Default::default(),
                 body: Default::default(),
                 content_type: Default::default(),
                 user_properties_tab: Default::default(),

@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::OnceCell;
+use std::cell::{Cell, OnceCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -25,7 +25,7 @@ use crate::services::subscription_messages::{
 };
 use crate::utils;
 use crate::widgets::{
-    MQTTySubscriptionDialog, MQTTySubscriptionMessagesSheet, MQTTySubscriptionRow,
+    AdwIndicatorBin, MQTTySubscriptionDialog, MQTTySubscriptionMessagesSheet, MQTTySubscriptionRow,
 };
 
 use super::{handle_gesture_claim_event, toasts};
@@ -42,6 +42,9 @@ mod imp {
     pub struct MQTTySubscriptionsOverview {
         #[property(get, construct_only)]
         client: OnceCell<MQTTySubscriptionMessagesClientWrapper>,
+
+        #[property(get, set)]
+        n_unread: Cell<u32>,
 
         #[template_child]
         list_box: TemplateChild<gtk::ListBox>,
@@ -60,6 +63,9 @@ mod imp {
 
         #[template_child]
         reset_session_button: TemplateChild<gtk::Button>,
+
+        #[template_child]
+        indicator_bin: TemplateChild<AdwIndicatorBin>,
     }
 
     #[glib::object_subclass]
@@ -91,6 +97,7 @@ mod imp {
             let stack = &self.stack;
             let list_box = &self.list_box;
             let bottom_sheet = &self.bottom_sheet;
+            let indicator_bin = &self.indicator_bin;
 
             bottom_sheet.set_sheet(Some(&MQTTySubscriptionMessagesSheet::new(&client)));
 
@@ -167,6 +174,25 @@ mod imp {
 
             self.header_bar.add_controller(click);
             self.header_bar.add_controller(drag);
+
+            obj.connect_n_unread_notify(glib::clone!(
+                #[weak]
+                indicator_bin,
+                move |obj| {
+                    indicator_bin.set_needs_attention(obj.n_unread() > 0);
+                    indicator_bin.set_badge_number(obj.n_unread());
+                }
+            ));
+
+            bottom_sheet.connect_open_notify(glib::clone!(
+                #[weak]
+                obj,
+                move |bottom_sheet| {
+                    if bottom_sheet.is_open() {
+                        obj.set_n_unread(0);
+                    }
+                }
+            ));
         }
     }
 

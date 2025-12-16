@@ -41,6 +41,15 @@ template $MQTTySubscriptionsConnectionRow: Adw.ActionRow {
     icon-name: "view-more-symbolic";
     menu-model: row_menu;
   }
+
+  [suffix]
+  $AdwIndicatorBin indicator_bin {
+    valign: center;
+
+    child: Image {
+      icon-name: "go-next-symbolic";
+    };
+  }
 }
 
 menu row_menu {

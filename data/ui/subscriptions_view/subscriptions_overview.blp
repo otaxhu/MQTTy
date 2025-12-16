@@ -21,6 +21,8 @@ template $MQTTySubscriptionsOverview: Adw.NavigationPage {
   Adw.BottomSheet bottom_sheet {
     // // Sheet is being set in the class
     // sheet: ...;
+    show-drag-handle: false;
+
     content: Adw.ToolbarView {
       [top]
       Adw.HeaderBar header_bar {
@@ -51,9 +53,18 @@ template $MQTTySubscriptionsOverview: Adw.NavigationPage {
 
         [end]
         ToggleButton {
+          styles [
+            "flat",
+          ]
+
           active: bind bottom_sheet.open bidirectional;
-          icon-name: "chat-bubble-empty-symbolic";
           tooltip-text: _("Show messages");
+
+          child: $AdwIndicatorBin indicator_bin {
+            child: Image {
+              icon-name: "chat-bubble-empty-symbolic";
+            };
+          };
         }
       }
 

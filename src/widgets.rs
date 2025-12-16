@@ -13,11 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+mod indicator_bin;
 mod key_value_row;
 mod publish_view;
 mod source_view;
 mod subscriptions_view;
 
+pub use indicator_bin::AdwIndicatorBin;
 pub use key_value_row::MQTTyKeyValueRow;
 pub use publish_view::{
     MQTTyPublishAuthTab, MQTTyPublishBodyTab, MQTTyPublishGeneralTab, MQTTyPublishUserPropsTab,

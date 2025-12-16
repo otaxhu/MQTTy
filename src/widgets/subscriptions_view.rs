@@ -308,7 +308,17 @@ mod imp {
                     .downcast_ref::<MQTTySubscriptionMessagesClientWrapper>()
                     .unwrap();
 
-                MQTTySubscriptionsConnectionRow::new(client).upcast()
+                let row = MQTTySubscriptionsConnectionRow::new(client);
+
+                client.connect_message(glib::clone!(
+                    #[weak]
+                    row,
+                    move |_, _| {
+                        row.set_n_unread(row.n_unread() + 1);
+                    }
+                ));
+
+                row.upcast()
             });
 
             sidebar.connect_row_activated(glib::clone!(
@@ -407,6 +417,11 @@ mod imp {
 
             let overview = map.entry(client).or_insert_with_key(|client| {
                 let o = MQTTySubscriptionsOverview::new(client);
+                conn_row
+                    .bind_property("n_unread", &o, "n_unread")
+                    .sync_create()
+                    .bidirectional()
+                    .build();
                 o
             });
 

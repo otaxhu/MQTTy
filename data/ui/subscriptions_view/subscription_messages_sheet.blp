@@ -16,50 +16,67 @@ using Gtk 4.0;
 using Adw 1;
 
 template $MQTTySubscriptionMessagesSheet: Adw.Bin {
-  ScrolledWindow {
-    propagate-natural-height: true;
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar header_bar {
+      show-end-title-buttons: false;
 
-    Stack stack {
-      StackPage {
-        name: "no-messages";
-
-        child: Adw.StatusPage {
-          icon-name: "chat-none-symbolic";
-          title: _("Messages");
-          description: _("There is no messages");
-        };
+      [start]
+      Button {
+        action-name: "sheet.close";
+        icon-name: "go-previous-symbolic";
+        tooltip-text: _("Close messages");
       }
 
-      StackPage {
-        name: "messages";
+      title-widget: Adw.WindowTitle {
+        title: _("Messages");
+      };
+    }
 
-        child: Adw.Clamp {
-          Box {
-            margin-top: 24;
-            margin-bottom: 16;
-            margin-start: 16;
-            margin-end: 16;
-            orientation: vertical;
+    content: ScrolledWindow {
+      propagate-natural-height: true;
 
-            ListBox list_box {
-              styles [
-                "boxed-list-separate",
-              ]
+      Stack stack {
+        StackPage {
+          name: "no-messages";
 
+          child: Adw.StatusPage {
+            icon-name: "chat-none-symbolic";
+            title: _("Messages");
+            description: _("There is no messages");
+          };
+        }
+
+        StackPage {
+          name: "messages";
+
+          child: Adw.Clamp {
+            Box {
               margin-top: 16;
               margin-bottom: 16;
               margin-start: 16;
               margin-end: 16;
-              selection-mode: none;
-            }
+              orientation: vertical;
 
-            Button load_messages_button {
-              label: _("Load more messages");
-              clicked => $on_load_messages() swapped;
+              ListBox list_box {
+                styles [
+                  "boxed-list-separate",
+                ]
+
+                margin-bottom: 16;
+                margin-start: 16;
+                margin-end: 16;
+                selection-mode: none;
+              }
+
+              Button load_messages_button {
+                label: _("Load more messages");
+                clicked => $on_load_messages() swapped;
+              }
             }
-          }
-        };
+          };
+        }
       }
-    }
+    };
   }
 }

@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::OnceCell;
+use std::cell::{Cell, OnceCell};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -21,11 +21,11 @@ use formatx::formatx;
 use gettextrs::gettext;
 use gtk::glib;
 
+use crate::client::MQTTyClientConnectionState;
 use crate::services::subscription_messages::MQTTySubscriptionMessagesClientWrapper;
+use crate::widgets::AdwIndicatorBin;
 
 mod imp {
-
-    use crate::client::MQTTyClientConnectionState;
 
     use super::*;
 
@@ -36,10 +36,15 @@ mod imp {
         #[property(get, construct_only)]
         client: OnceCell<MQTTySubscriptionMessagesClientWrapper>,
 
+        #[property(get, set)]
+        n_unread: Cell<u32>,
+
         #[template_child]
         switcher: TemplateChild<gtk::Switch>,
         #[template_child]
         spinner: TemplateChild<adw::Spinner>,
+        #[template_child]
+        indicator_bin: TemplateChild<AdwIndicatorBin>,
     }
 
     #[glib::object_subclass]
@@ -93,6 +98,7 @@ mod imp {
 
             let switcher = &self.switcher;
             let spinner = &self.spinner;
+            let indicator_bin = &self.indicator_bin;
 
             client
                 .bind_property("name", &*obj, "title")
@@ -195,6 +201,15 @@ mod imp {
                         switcher.remove_css_class("error");
                     }
                     spinner.set_visible(spinning);
+                }
+            ));
+
+            obj.connect_n_unread_notify(glib::clone!(
+                #[weak]
+                indicator_bin,
+                move |obj| {
+                    indicator_bin.set_needs_attention(obj.n_unread() > 0);
+                    indicator_bin.set_badge_number(obj.n_unread());
                 }
             ));
         }
