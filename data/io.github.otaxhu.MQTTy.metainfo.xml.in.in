@@ -23,7 +23,7 @@
       <caption>Publish view</caption>
     </screenshot>
   </screenshots>
-  <url type="homepage">https://github.com/otaxhu/MQTTy</url>
+  <url type="homepage">https://getmqtty.app</url>
   <url type="bugtracker">https://github.com/otaxhu/MQTTy/issues</url>
   <url type="vcs-browser">https://github.com/otaxhu/MQTTy</url>
   <url type="translate">https://github.com/otaxhu/MQTTy/tree/main/po</url>
@@ -48,8 +48,9 @@
     <display_length compare="ge">360</display_length>
   </requires>
 
-  <!-- Put latest release as the first one -->
+  <!-- Put latest release below devel-release-note -->
   <releases>
+    @devel-release-note@
     <release date="2025-05-11" version="0.1.4">
       <description translate="no" translatable="no">
         <p>Windows fixes:</p>

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/io/github/otaxhu/MQTTy/">
+    <file compressed="true" preprocess="xml-stripblanks">@app-id@.metainfo.xml</file>
+
     <!-- See: https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1-latest/class.Application.html#automatic-resources -->
     <file compressed="true" preprocess="xml-stripblanks" alias="shortcuts-dialog.ui">auto-resources/shortcuts-dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">ui/main_window.ui</file>

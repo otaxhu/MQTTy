@@ -65,17 +65,6 @@ css = custom_target('css',
   command: [sass, '--no-source-map', '--style=compressed',  '@INPUT0@', '@OUTPUT@']
 )
 
-# Resources
-resources = gnome.compile_resources(
-  'MQTTy',
-  '@0@.gresource.xml'.format(base_id),
-  dependencies: [blueprints, css],
-  gresource_bundle: true,
-  source_dir: meson.current_build_dir(),
-  install: true,
-  install_dir: pkgdatadir,
-)
-
 # Desktop file
 desktop_conf = configuration_data()
 desktop_conf.set('icon', application_id)
@@ -107,6 +96,20 @@ endif
 appdata_conf = configuration_data()
 appdata_conf.set('app-id', application_id)
 appdata_conf.set('gettext-package', gettext_package)
+if profile == 'Devel'
+  appdata_conf.set('devel-release-note',
+    '''
+      <release version="@0@">
+        <description translate="no" translatable="no">
+          <p>
+            This is a development release
+          </p>
+        </description>
+      </release>
+    '''.format(version + version_suffix))
+else
+  appdata_conf.set('devel-release-note', '')
+endif
 appdata_file = i18n.merge_file(
   input: configure_file(
     input: '@0@.metainfo.xml.in.in'.format(base_id),
@@ -128,6 +131,23 @@ if appstreamcli.found()
     depends: appdata_file,
   )
 endif
+
+# Resources
+resources_conf = configuration_data()
+resources_conf.set('app-id', application_id)
+resources = gnome.compile_resources(
+  'MQTTy',
+  configure_file(
+    input: '@0@.gresource.xml.in'.format(base_id),
+    output: '@BASENAME@',
+    configuration: resources_conf,
+  ),
+  dependencies: [blueprints, css, appdata_file],
+  gresource_bundle: true,
+  source_dir: meson.current_build_dir(),
+  install: true,
+  install_dir: pkgdatadir,
+)
 
 # GSchema
 gschema_conf = configuration_data()

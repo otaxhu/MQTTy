@@ -150,17 +150,17 @@ impl MQTTyApplication {
 
         let action_about = gio::ActionEntry::builder("about")
             .activate(|app: &Self, _, _| {
-                let about_dialog = adw::AboutDialog::builder()
-                    .application_name("MQTTy")
-                    .application_icon(config::APP_ID)
-                    .version(config::VERSION)
-                    .copyright(gettext("© 2025 The MQTTy Authors"))
-                    .developer_name(gettext("The MQTTy Authors"))
-                    .translator_credits(gettext("translator-credits"))
-                    .license_type(gtk::License::Gpl30)
-                    .issue_url("https://github.com/otaxhu/MQTTy/issues")
-                    .website("https://github.com/otaxhu/MQTTy")
-                    .build();
+                let about_dialog = adw::AboutDialog::from_appdata(
+                    &format!("/io/github/otaxhu/MQTTy/{}.metainfo.xml", config::APP_ID),
+                    Some(config::VERSION),
+                );
+                // Translators: See: https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/method.AboutDialog.set_translator_credits.html
+                about_dialog.set_translator_credits(&gettext("translator-credits"));
+                about_dialog.set_copyright(&gettext("© 2025 Oscar Pernia"));
+                about_dialog.add_link(
+                    &gettext("Help us translate"),
+                    "https://hosted.weblate.org/engage/MQTTy/",
+                );
 
                 about_dialog.present(app.active_window().as_ref());
             })
