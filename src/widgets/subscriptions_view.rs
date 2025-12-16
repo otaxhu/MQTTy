@@ -130,6 +130,20 @@ mod imp {
 
                             im.clients_overview_map.borrow_mut().remove(&client);
                             im.nav_split_view.set_content(adw::NavigationPage::NONE);
+                            let borrow = im.last_selected_row.borrow();
+                            let delete_last = match &*borrow {
+                                Some(r) => {
+                                    let row = r
+                                        .downcast_ref::<MQTTySubscriptionsConnectionRow>()
+                                        .unwrap();
+                                    row.client() == client
+                                }
+                                _ => false,
+                            };
+                            drop(borrow);
+                            if delete_last {
+                                im.last_selected_row.take();
+                            }
                         }
                     ));
                 },
@@ -376,15 +390,14 @@ mod imp {
     impl MQTTySubscriptionsView {
         /// Remember to call `nav_split_view.set_show_content(...)` after this.
         fn set_subs_overview(&self, row: Option<&gtk::ListBoxRow>) {
-            let Some(client) = row.map(|r| {
-                r.downcast_ref::<MQTTySubscriptionsConnectionRow>()
-                    .unwrap()
-                    .client()
-            }) else {
-                // An unselection ocurred.
-                self.last_selected_row.replace(None);
+            let Some(conn_row) =
+                row.map(|r| r.downcast_ref::<MQTTySubscriptionsConnectionRow>().unwrap())
+            else {
+                // An unselection ocurred, we ignore it.
                 return;
             };
+
+            let client = conn_row.client();
 
             self.last_selected_row.replace(row.map(|r| r.clone()));
 
@@ -392,9 +405,10 @@ mod imp {
 
             let mut map = self.clients_overview_map.borrow_mut();
 
-            let overview = map
-                .entry(client)
-                .or_insert_with_key(|client| MQTTySubscriptionsOverview::new(client));
+            let overview = map.entry(client).or_insert_with_key(|client| {
+                let o = MQTTySubscriptionsOverview::new(client);
+                o
+            });
 
             nav_split_view.set_content(Some(overview));
         }
