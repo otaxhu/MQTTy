@@ -20,9 +20,11 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 use crate::application::MQTTyApplication;
-use crate::config;
+use crate::client::MQTTyClientMessage;
+use crate::models::MQTTyConnectionModel;
 use crate::toast::MQTTyToastBuilder;
 use crate::widgets::{MQTTyPublishView, MQTTyPublishViewNotebook, MQTTySubscriptionsView};
+use crate::{config, utils};
 
 mod imp {
 
@@ -35,13 +37,13 @@ mod imp {
         pub toast_overlay: TemplateChild<adw::ToastOverlay>,
 
         #[template_child]
-        view_stack: TemplateChild<adw::ViewStack>,
+        pub view_stack: TemplateChild<adw::ViewStack>,
 
         #[template_child]
         publish_view: TemplateChild<MQTTyPublishView>,
 
         #[template_child]
-        subscriptions_view: TemplateChild<MQTTySubscriptionsView>,
+        pub subscriptions_view: TemplateChild<MQTTySubscriptionsView>,
     }
 
     #[glib::object_subclass]
@@ -232,6 +234,18 @@ mod imp {
             in_subscriptions_view.bind(&action_subscriptions_new, "enabled", glib::Object::NONE);
 
             obj.add_action(&action_subscriptions_new);
+
+            view_stack.connect_visible_child_name_notify(glib::clone!(
+                #[weak]
+                subscriptions_view,
+                move |view_stack| {
+                    if view_stack.visible_child().unwrap() == subscriptions_view {
+                        view_stack
+                            .page(&subscriptions_view)
+                            .set_needs_attention(false);
+                    }
+                }
+            ));
         }
     }
 
@@ -303,5 +317,44 @@ impl MQTTyWindow {
 
     pub fn toast(&self, toast: &adw::Toast) {
         self.imp().toast_overlay.add_toast(toast.clone());
+    }
+
+    /// This handles both setting ":needs-attention" for subscriptions page,
+    /// and if the window is unactive, it sends an OS notification to the user.
+    pub fn subscriptions_needs_attention(
+        &self,
+        conn_model: impl AsRef<MQTTyConnectionModel>,
+        msg: &MQTTyClientMessage,
+    ) {
+        let im = self.imp();
+        if im.view_stack.visible_child().unwrap() != *im.subscriptions_view {
+            im.view_stack
+                .page(&*im.subscriptions_view)
+                .set_needs_attention(true);
+        }
+
+        if !self.is_active() {
+            if cfg!(not(target_os = "windows")) {
+                let app = MQTTyApplication::get_singleton();
+                let notification = gio::Notification::new(&gettext("MQTT message arrived"));
+                let max_chars = 16;
+                notification.set_body(Some(
+                    formatx!(
+                        // FIXME: Was trying to separate Connection and Topic into 2 lines,
+                        // but GNOME isn't displaying the line feed.
+                        gettext("Connection '{}' – Topic '{}'"),
+                        utils::truncate_ellipsis(&conn_model.as_ref().name, max_chars),
+                        utils::truncate_ellipsis(&msg.topic(), max_chars),
+                    )
+                    .unwrap()
+                    .as_str(),
+                ));
+                app.send_notification(None, &notification);
+            } else {
+                // TODO: Notifications API isn't supported in windows, maybe we could play a subtle
+                // sound, just like many windows apps does, e.g. WhatsApp, Discord, etc.
+                // Use GtkMediaFile for that, though idk if it would work when the window is hidden.
+            }
+        }
     }
 }

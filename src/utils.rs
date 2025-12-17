@@ -12,6 +12,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use std::borrow::Cow;
+
 use adw::prelude::*;
 use gtk::{gio, glib};
 
@@ -143,4 +146,19 @@ pub fn gtk_drag_check_threshold_double(
 
     (offset_point.0 - start_point.0).abs() > drag_threshold as f64
         || (offset_point.1 - start_point.1).abs() > drag_threshold as f64
+}
+
+/// Doesn't support truncating grapheme clusters. This is intentional, as this is
+/// only used in non-critical places (e.g. UI notifications), and adding support
+/// to it will only add unnecessary complexity.
+pub fn truncate_ellipsis(s: &str, max_chars: usize) -> Cow<'_, str> {
+    let upto = match s.char_indices().nth(max_chars) {
+        Some((i, _)) => i,
+        // String shorter or equal than max_chars
+        None => return Cow::Borrowed(s),
+    };
+
+    let s = &s[..upto];
+
+    Cow::Owned(format!("{s}…"))
 }

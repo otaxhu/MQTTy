@@ -39,6 +39,7 @@ use gtk::glib;
 
 use crate::application::MQTTyApplication;
 use crate::display_mode::{MQTTyDisplayMode, MQTTyDisplayModeIface, MQTTyDisplayModeIfaceImpl};
+use crate::main_window::MQTTyWindow;
 use crate::services::subscription_messages::{
     MQTTySubscriptionMessagesClientWrapper, MQTTySubscriptionMessagesController,
 };
@@ -313,8 +314,11 @@ mod imp {
                 client.connect_message(glib::clone!(
                     #[weak]
                     row,
-                    move |_, _| {
+                    move |client, msg| {
                         row.set_n_unread(row.n_unread() + 1);
+                        let app = MQTTyApplication::get_singleton();
+                        let window = app.active_window().and_downcast::<MQTTyWindow>().unwrap();
+                        window.subscriptions_needs_attention(client.connection_model(), &msg);
                     }
                 ));
 
