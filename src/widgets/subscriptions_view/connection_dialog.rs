@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::{Cell, RefCell};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 
 use adw::prelude::*;
 use adw::subclass::prelude::*;
@@ -21,7 +21,7 @@ use gettextrs::gettext;
 use gtk::glib;
 use nanoid::nanoid;
 
-use crate::models::MQTTyConnectionModel;
+use crate::models::{MQTTyConnectionModel, MQTTyConnectionSessionModel};
 
 mod imp {
 
@@ -31,14 +31,14 @@ mod imp {
     #[template(resource = "/io/github/otaxhu/MQTTy/ui/subscriptions_view/connection_dialog.ui")]
     #[properties(wrapper_type = super::MQTTySubscriptionsConnectionDialog)]
     pub struct MQTTySubscriptionsConnectionDialog {
-        #[property(name = "name", get, set, type = String, member = name)]
+        #[property(name = "name", get = |o: &Self| o.connection().as_ref().name.clone(), set = |o: &Self, i: _| o.connection_mut().as_mut().name = i, type = String)]
+        #[property(name = "url", get = |o: &Self| o.connection().as_ref().url.clone(), set = |o: &Self, i: _| o.connection_mut().as_mut().url = i, type = String)]
+        #[property(name = "username", get = |o: &Self| o.connection().as_ref().username.clone(), set = |o: &Self, i: _| o.connection_mut().as_mut().username = i, type = Option<String>)]
+        #[property(name = "password", get = |o: &Self| o.connection().as_ref().password.clone(), set = |o: &Self, i: _| o.connection_mut().as_mut().password = i, type = Option<String>)]
         #[property(name = "client-id", get, set, type = String, member = client_id)]
-        #[property(name = "url", get, set, type = String, member = url)]
-        #[property(name = "username", get, set, type = Option<String>, member = username)]
-        #[property(name = "password", get, set, type = Option<String>, member = password)]
         #[property(name = "wipe-queue-on-connect", get, set, type = bool, member = wipe_queue_on_connect)]
         #[property(name = "connected", get, set, type = bool, member = user_connected)]
-        pub connection: RefCell<MQTTyConnectionModel>,
+        pub connection: RefCell<MQTTyConnectionSessionModel>,
 
         #[property(get, set)]
         is_valid: Cell<bool>,
@@ -65,10 +65,13 @@ mod imp {
 
         fn new() -> Self {
             Self {
-                connection: RefCell::new(MQTTyConnectionModel {
-                    username: Some("".to_string()),
-                    password: Some("".to_string()),
+                connection: RefCell::new(MQTTyConnectionSessionModel {
                     user_connected: true,
+                    connection: MQTTyConnectionModel {
+                        username: Some("".to_string()),
+                        password: Some("".to_string()),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -108,6 +111,16 @@ mod imp {
     impl WidgetImpl for MQTTySubscriptionsConnectionDialog {}
     impl AdwDialogImpl for MQTTySubscriptionsConnectionDialog {}
     impl AdwAlertDialogImpl for MQTTySubscriptionsConnectionDialog {}
+
+    impl MQTTySubscriptionsConnectionDialog {
+        fn connection(&'_ self) -> Ref<'_, MQTTyConnectionSessionModel> {
+            self.connection.borrow()
+        }
+
+        fn connection_mut(&'_ self) -> RefMut<'_, MQTTyConnectionSessionModel> {
+            self.connection.borrow_mut()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -124,14 +137,14 @@ impl MQTTySubscriptionsConnectionDialog {
             .build()
     }
 
-    pub fn new_edit(conn: &MQTTyConnectionModel) -> Self {
+    pub fn new_edit(conn: &MQTTyConnectionSessionModel) -> Self {
         glib::Object::builder()
             .property("heading", gettext("Edit connection"))
-            .property("name", &conn.name)
+            .property("name", &conn.as_ref().name)
             .property("client-id", &conn.client_id)
-            .property("url", &conn.url)
-            .property("username", conn.username.as_ref())
-            .property("password", conn.password.as_ref())
+            .property("url", &conn.as_ref().url)
+            .property("username", conn.as_ref().username.as_ref())
+            .property("password", conn.as_ref().password.as_ref())
             .property("wipe-queue-on-connect", conn.wipe_queue_on_connect)
             .property("connected", conn.user_connected)
             .build()
@@ -142,7 +155,7 @@ impl MQTTySubscriptionsConnectionDialog {
     pub async fn choose_future(
         self,
         parent: &impl IsA<gtk::Widget>,
-    ) -> Option<MQTTyConnectionModel> {
+    ) -> Option<MQTTyConnectionSessionModel> {
         match AlertDialogExtManual::choose_future(self.clone(), Some(parent))
             .await
             .as_ref()

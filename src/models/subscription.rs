@@ -13,12 +13,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use serde::{Deserialize, Serialize};
+
 use crate::client::MQTTyClientQos;
 
 /// This struct represents a model for an MQTT subscription
 ///
 /// For now we only support MQTT v3.x subscriptions
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct MQTTySubscriptionModel {
     /// May contain wildcards
     pub topic_filter: String,

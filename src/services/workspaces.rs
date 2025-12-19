@@ -13,17 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use serde::{Deserialize, Serialize};
+mod controller;
+mod models;
 
-use crate::client::MQTTyClientVersion;
-
-/// This struct represents a model for an MQTT connection, no fields associated to
-/// session handling, for that, use MQTTyConnectionSessionModel.
-#[derive(Default, Clone, Serialize, Deserialize)]
-pub struct MQTTyConnectionModel {
-    pub name: String,
-    pub url: String,
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub mqtt_version: MQTTyClientVersion,
-}
+pub use controller::MQTTyWorkspacesController;
+pub use models::*;

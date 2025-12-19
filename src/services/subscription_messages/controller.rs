@@ -20,7 +20,7 @@ use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gtk::{gio, glib};
 
-use crate::models::MQTTyConnectionModel;
+use crate::models::MQTTyConnectionSessionModel;
 
 use super::store::MQTTySubscriptionMessagesStore;
 use super::MQTTySubscriptionMessagesClientWrapper;
@@ -56,14 +56,14 @@ mod imp {
     impl ObjectImpl for MQTTySubscriptionMessagesController {}
 
     impl MQTTySubscriptionMessagesController {
-        pub fn add_clients(&self, clients: &[MQTTyConnectionModel]) {
+        pub fn add_clients(&self, clients: &[MQTTyConnectionSessionModel]) {
             let mut new_clients = vec![];
             let store = self.store();
 
             let clients_list = self.clients();
 
             for client in clients.iter() {
-                if self.contains_connection(&client.url, &client.client_id) {
+                if self.contains_connection(&client.as_ref().url, &client.client_id) {
                     // The controller already contains this connection, if you
                     // would like to show this to the user, you should call
                     // self.contains_connection(url, client_id)
@@ -184,7 +184,7 @@ impl MQTTySubscriptionMessagesController {
         Ok(o)
     }
 
-    pub fn add_clients(&self, clients_model: &[MQTTyConnectionModel]) {
+    pub fn add_clients(&self, clients_model: &[MQTTyConnectionSessionModel]) {
         self.imp().add_clients(clients_model)
     }
 

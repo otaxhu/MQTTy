@@ -26,6 +26,7 @@ dependencies = [
  "serde_json",
  "sourceview5",
  "thiserror 2.0.17",
+ "toml",
  "winresource",
 ]
 

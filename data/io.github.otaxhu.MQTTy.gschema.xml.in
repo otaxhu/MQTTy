@@ -13,25 +13,9 @@
       <default>false</default>
       <summary>Window maximized state</summary>
     </key>
-
-    <!--
-      TODO: This key is not being referenced in any part of the code,
-      MQTTy will get a "Workspace" feature very soon, in which all of
-      publish tabs and subscriptions will be saved to a serializable
-      file, that will be able to be loaded up to the app.
-    -->
-    <!--
-      This is the human-readable type definition for this setting:
-
-        type open-connections = []struct
-          {
-            url: String;
-            topic: String;
-          }
-     -->
-    <!-- <key name="connections" type="a(ss)">
-      <default>[]</default>
-      <summary>List of open connections</summary>
-    </key> -->
+    <key name="recent-workspace-file" type="may">
+      <default>nothing</default>
+      <summary>Path to the most recently used workspace file</summary>
+    </key>
   </schema>
 </schemalist>

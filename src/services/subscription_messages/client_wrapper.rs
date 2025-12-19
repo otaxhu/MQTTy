@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::cell::{Cell, OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, Ref, RefCell};
 use std::rc::Rc;
 use std::sync::LazyLock;
 
@@ -25,7 +25,7 @@ use gtk::{gio, glib};
 use crate::client::{
     MQTTyClient, MQTTyClientConnectionState, MQTTyClientMessage, MQTTyClientVersion,
 };
-use crate::models::{MQTTyConnectionModel, MQTTySubscriptionModel};
+use crate::models::{MQTTyConnectionSessionModel, MQTTySubscriptionModel};
 
 use super::store;
 use super::store::MQTTySubscriptionMessagesStore;
@@ -41,15 +41,15 @@ mod imp {
         #[property(get)]
         pub connected: Cell<bool>,
 
-        #[property(name = "name", get, member = name, type = String)]
+        #[property(name = "name", get = |o: &Self| o.connection_model().as_ref().name.clone(), type = String)]
+        #[property(name = "url", get = |o: &Self| o.connection_model().as_ref().url.clone(), type = String)]
+        #[property(name = "username", get = |o: &Self| o.connection_model().as_ref().username.clone(), type = Option<String>, nullable)]
+        #[property(name = "password", get = |o: &Self| o.connection_model().as_ref().password.clone(), type = Option<String>, nullable)]
+        #[property(name = "mqtt-version", get = |o: &Self| o.connection_model().as_ref().mqtt_version, type = MQTTyClientVersion, builder(Default::default()))]
         #[property(name = "client-id", get, member = client_id, type = String)]
-        #[property(name = "url", get, member = url, type = String)]
-        #[property(name = "username", get, member = username, type = Option<String>, nullable)]
-        #[property(name = "password", get, member = password, type = Option<String>, nullable)]
-        #[property(name = "mqtt-version", get, member = mqtt_version, type = MQTTyClientVersion, builder(Default::default()))]
         #[property(name = "user-connected", get, set, member = user_connected, type = bool)]
         #[property(name = "wipe-queue-on-connect", get, member = wipe_queue_on_connect, type = bool)]
-        pub connection_model: RefCell<MQTTyConnectionModel>,
+        pub connection_model: RefCell<MQTTyConnectionSessionModel>,
 
         /** type: gio::ListStore<MQTTySubscriptionMessagesSubscription> */
         #[property(get = Self::subscriptions)]
@@ -271,11 +271,15 @@ mod imp {
             self.client().disconnect_client().await
         }
 
-        pub fn set_connection_model(&self, conn_model: &MQTTyConnectionModel) {
+        pub fn connection_model(&'_ self) -> Ref<'_, MQTTyConnectionSessionModel> {
+            self.connection_model.borrow()
+        }
+
+        pub fn set_connection_model(&self, conn_model: &MQTTyConnectionSessionModel) {
             let obj = self.obj();
 
             let identity_changed =
-                obj.client_id() != conn_model.client_id || obj.url() != conn_model.url;
+                obj.client_id() != conn_model.client_id || obj.url() != conn_model.as_ref().url;
 
             *self.connection_model.borrow_mut() = conn_model.clone();
 
@@ -434,7 +438,7 @@ impl MQTTySubscriptionMessagesClientWrapper {
      * Visibility is `pub(super)` so that it can only be constructed by the controller
      */
     pub(super) fn new(
-        conn: &MQTTyConnectionModel,
+        conn: &MQTTyConnectionSessionModel,
         store: Rc<MQTTySubscriptionMessagesStore>,
     ) -> Self {
         let o: Self = glib::Object::new();
@@ -450,8 +454,8 @@ impl MQTTySubscriptionMessagesClientWrapper {
         o
     }
 
-    pub fn connection_model(&self) -> MQTTyConnectionModel {
-        self.imp().connection_model.borrow().clone()
+    pub fn connection_model(&self) -> MQTTyConnectionSessionModel {
+        self.imp().connection_model().clone()
     }
 
     /// This updates the wrapped client with the new props,
@@ -461,7 +465,7 @@ impl MQTTySubscriptionMessagesClientWrapper {
     ///
     /// Additionally it emits all of the "::notify" signals that correspond
     /// to the connection_model.
-    pub fn set_connection_model(&self, conn_model: &MQTTyConnectionModel) {
+    pub fn set_connection_model(&self, conn_model: &MQTTyConnectionSessionModel) {
         self.imp().set_connection_model(conn_model);
     }
 

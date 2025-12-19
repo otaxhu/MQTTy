@@ -15,15 +15,16 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::client::MQTTyClientVersion;
+use crate::client::MQTTyClientQos;
+use crate::content_type::MQTTyContentType;
 
-/// This struct represents a model for an MQTT connection, no fields associated to
-/// session handling, for that, use MQTTyConnectionSessionModel.
+/// This represents an MQTT message for publishing purposes, for this application.
 #[derive(Default, Clone, Serialize, Deserialize)]
-pub struct MQTTyConnectionModel {
-    pub name: String,
-    pub url: String,
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub mqtt_version: MQTTyClientVersion,
+pub struct MQTTyPublishMessageModel {
+    pub topic: String,
+    pub qos: MQTTyClientQos,
+    pub retained: bool,
+    pub content_type: MQTTyContentType,
+    pub user_properties: Vec<(String, String)>,
+    pub body: Vec<u8>,
 }

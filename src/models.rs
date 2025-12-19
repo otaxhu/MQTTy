@@ -14,7 +14,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 mod connection;
+mod connection_session;
+mod publish_message;
 mod subscription;
 
 pub use connection::MQTTyConnectionModel;
+pub use connection_session::MQTTyConnectionSessionModel;
+pub use publish_message::MQTTyPublishMessageModel;
 pub use subscription::MQTTySubscriptionModel;

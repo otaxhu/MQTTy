@@ -15,8 +15,9 @@
 
 use gettextrs::pgettext;
 use gtk::glib;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Clone, Copy, glib::Enum, PartialEq)]
+#[derive(Default, Clone, Copy, glib::Enum, PartialEq, Serialize, Deserialize)]
 #[enum_type(name = "MQTTyContentType")]
 pub enum MQTTyContentType {
     #[default]

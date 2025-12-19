@@ -185,7 +185,7 @@ mod imp {
 
                             if controller.contains_connection_for_update(
                                 &client,
-                                &conn.url,
+                                &conn.as_ref().url,
                                 &conn.client_id,
                             ) {
                                 // The connection already exists
@@ -458,7 +458,7 @@ impl MQTTySubscriptionsView {
 
         let controller = self.imp().controller();
 
-        if controller.contains_connection(&conn.url, &conn.client_id) {
+        if controller.contains_connection(&conn.as_ref().url, &conn.client_id) {
             // The connection already exists
             toasts::client_already_exists();
             return;
