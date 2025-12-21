@@ -129,8 +129,33 @@ mod imp {
 
                             let _ = controller.remove_client(&client).await;
 
-                            im.clients_overview_map.borrow_mut().remove(&client);
-                            im.nav_split_view.set_content(adw::NavigationPage::NONE);
+                            // This prevents a weird flickering due to setting
+                            // nav_split_view:content to NONE and then again after
+                            // in the "::row-selected" signal handler.
+                            //
+                            // Here we are directly selecting a row, then in
+                            // "::row-selected" it gets handled.
+                            im.sidebar.select_row(
+                                im.sidebar
+                                    .row_at_index(
+                                        index.min(clients.n_items().saturating_sub(1)) as _
+                                    )
+                                    .as_ref(),
+                            );
+
+                            if let (Some(overview), Some(nav_content)) = (
+                                im.clients_overview_map.borrow_mut().remove(&client),
+                                im.nav_split_view.content(),
+                            ) {
+                                if overview == nav_content {
+                                    // Above should hold true only if there was 1 client
+                                    // (at this point 0 because of the removal).
+                                    //
+                                    // We drop it so that there is no memory leak.
+                                    im.nav_split_view.set_content(adw::NavigationPage::NONE);
+                                }
+                            }
+
                             let borrow = im.last_selected_row.borrow();
                             let delete_last = match &*borrow {
                                 Some(r) => {
@@ -143,6 +168,7 @@ mod imp {
                             };
                             drop(borrow);
                             if delete_last {
+                                // We drop it so that there is no memory leak.
                                 im.last_selected_row.take();
                             }
                         }
